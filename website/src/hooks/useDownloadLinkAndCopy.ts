@@ -15,12 +15,12 @@ export const useDownloadLink = (index: number) => {
     }
 
     html2canvas(element).then((canvas) => {
-      console.log('setting vals');
       setLink(
         canvas
           .toDataURL('image/png')
           .replace('image/png', 'image/octet-stream'),
       );
+
       setCopy(() => {
         canvas.toBlob((blob) => {
           if (!blob) {

@@ -4,11 +4,12 @@ import clsx from 'clsx';
 import { useRef } from 'react';
 
 type FileInputParams = {
-  value?: FileList;
-  setValue?: (files: FileList) => void;
+  value?: File;
+  accept?: string;
+  setValue?: (file: File) => void;
 };
 
-export const FileInput = ({ value, setValue }: FileInputParams) => {
+export const FileInput = ({ value, setValue, accept }: FileInputParams) => {
   const hiddenInputRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -26,15 +27,15 @@ export const FileInput = ({ value, setValue }: FileInputParams) => {
               : 'text-gray-400 dark:text-white/30',
           )}
         >
-          {value?.[0]?.name ??
-            'Drop your iMessage data here or click to upload'}
+          {value?.name ?? 'Drop your iMessage data here or click to upload'}
         </div>
       </button>
       {/* HACK: file inputs are notoriously hard to style, so hide the native input and click it programmatically */}
       <input
         type="file"
+        accept={accept}
         onChange={(event) =>
-          event.target.files && setValue?.(event.target.files)
+          event.target.files?.[0] && setValue?.(event.target.files[0])
         }
         ref={hiddenInputRef}
         className="hidden"
