@@ -8,24 +8,23 @@ type TextsSentSummary = {
 };
 
 type TopSender = {
-  id: number;
+  id: string;
   messages_sent: number;
 };
 
-type MostMessagesSentDay = {
-  day_of_week:
-    | "Sunday"
-    | "Monday"
-    | "Tuesday"
-    | "Wednesday"
-    | "Thursday"
-    | "Friday"
-    | "Saturday";
-  messages_sent: number;
-};
+type DayOfWeek =
+  | "Sunday"
+  | "Monday"
+  | "Tuesday"
+  | "Wednesday"
+  | "Thursday"
+  | "Friday"
+  | "Saturday";
+
+type MostMessagesSentDay = Record<DayOfWeek, number>;
 
 type TopFriend = {
-  id: number;
+  id: string;
   message_count: number;
 };
 
@@ -40,7 +39,8 @@ type WordCount = {
 };
 
 type TopWordsPerFriend = {
-  [handle_id: number]: WordCount[];
+  id: string;
+  wordCount: WordCount[];
 };
 
 export class QueryManager {
@@ -108,7 +108,6 @@ LIMIT 3;
 
     const messages = await this.fetchMessagesForTopFriends(resultD);
 
-    // Processing messages for top words
     const resultE = this.processMessages(messages);
 
     return { resultA, resultB, resultC, resultD, resultE };

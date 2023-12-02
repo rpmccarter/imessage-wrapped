@@ -13,11 +13,9 @@ const port = process.env.PORT || 8000;
 const upload = multer({ dest: "uploads/" });
 app.post("/upload", upload.single("chatdb"), async (req, res) => {
   if (req.file && req.file.path) {
-    const db = new InMemoryDB();
-    db.loadDatabaseFromFile(req.file.path);
+    const db = new InMemoryDB(req.file.path);
 
     const queryManager = new QueryManager(db);
-
     try {
       const results = await queryManager.runQueries();
       res.json(results);
