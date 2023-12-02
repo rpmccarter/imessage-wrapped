@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+
+# Compiled output
+dist/
+build/
+
+# OS generated files
+.DS_Store
+
+# Process IDs
+*.pid
+*.pid.lock
+
+# Editor directories and files
+.vscode/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Coverage directory
+coverage/
