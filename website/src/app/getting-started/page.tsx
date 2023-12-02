@@ -5,6 +5,7 @@ import { FileInput } from './FileInput';
 import clsx from 'clsx';
 import { useData } from '@/context/DataContext';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
 
 const steps = [
   'download your phone data to your laptop',
@@ -59,6 +60,7 @@ const SubmitButton = ({ files }: SubmitButtonProps) => {
 
 const useSubmitFiles = () => {
   const { setData } = useData();
+  const router = useRouter();
 
   return useCallback(
     async (files: FileList) => {
@@ -71,11 +73,12 @@ const useSubmitFiles = () => {
         const response = await axios.post(API_ENDPOINT, file);
         console.log(response.data);
         setData(response.data);
+        router.push('/results');
       } catch (err) {
         console.error('an error occurred while fetching your results:', err);
       }
     },
-    [setData],
+    [setData, router],
   );
 };
 
