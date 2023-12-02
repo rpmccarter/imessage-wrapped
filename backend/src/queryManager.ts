@@ -21,7 +21,7 @@ type DayOfWeek =
   | "Friday"
   | "Saturday";
 
-type MostMessagesSentDay = Record<DayOfWeek, number>;
+type MessagesPerDay = Record<DayOfWeek, number>;
 
 type TopFriend = {
   id: string;
@@ -53,19 +53,19 @@ export class QueryManager {
   async runQueries(): Promise<{
     resultA: TextsSentSummary[];
     resultB: TopSender[];
-    resultC: MostMessagesSentDay[];
+    resultC: MessagesPerDay;
     resultD: TopFriend[];
-    resultE: TopWordsPerFriend;
+    resultE: TopWordsPerFriend[];
   }> {
     const resultA = (await this.db.query(
-      `"SELECT 
-      COUNT(*) as total_texts_sent,
-      MIN(datetime(date / 1000000000 + strftime(""%s"", ""2001-01-01""), ""unixepoch"", ""localtime"")) as first_text_date,
-      MAX(datetime(date / 1000000000 + strftime(""%s"", ""2001-01-01""), ""unixepoch"", ""localtime"")) as last_text_date
-  FROM message
-  WHERE is_from_me = 1;"
-      `
+      `SELECT 
+        COUNT(*) as total_texts_sent,
+        MIN(datetime(date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) as first_text_date,
+        MAX(datetime(date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) as last_text_date
+      FROM message
+      WHERE is_from_me = 1`
     )) as TextsSentSummary[];
+
     const resultB = (await this.db.query(
       `SELECT 
       h.id, 
@@ -77,9 +77,9 @@ export class QueryManager {
   ORDER BY messages_sent DESC
   LIMIT 10;`
     )) as TopSender[];
-    const resultC = (await this.db.query(
+    const dayOfWeekQueryResults = (await this.db.query(
       `SELECT 
-      CASE strftime('%w', datetime((m.date / 1000000000) + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime'))
+        CASE strftime('%w', datetime((m.date / 1000000000) + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime'))
           WHEN '0' THEN 'Sunday'
           WHEN '1' THEN 'Monday'
           WHEN '2' THEN 'Tuesday'
@@ -87,13 +87,22 @@ export class QueryManager {
           WHEN '4' THEN 'Thursday'
           WHEN '5' THEN 'Friday'
           WHEN '6' THEN 'Saturday'
-      END as day_of_week,
-      COUNT(*) as messages_sent
-  FROM message m
-  WHERE m.is_from_me = 1
-  GROUP BY day_of_week
-  ORDER BY messages_sent DESC;`
-    )) as MostMessagesSentDay[];
+        END as day_of_week,
+        COUNT(*) as messages_sent
+      FROM message m
+      WHERE m.is_from_me = 1
+      GROUP BY day_of_week
+      ORDER BY messages_sent DESC;`
+    )) as { day_of_week: DayOfWeek; messages_sent: number }[];
+
+    const resultC: MessagesPerDay = dayOfWeekQueryResults.reduce(
+      (acc, current) => {
+        acc[current.day_of_week] = current.messages_sent;
+        return acc;
+      },
+      {} as MessagesPerDay
+    );
+
     const resultD = (await this.db.query(`SELECT 
     h.id, 
     COUNT(*) as message_count
@@ -126,8 +135,8 @@ LIMIT 3;
     return messages;
   }
 
-  private processMessages(messages: Message[]): TopWordsPerFriend {
-    const wordCounts: Record<string, Record<string, number>> = {}; // Change to Record<string, ...>
+  private processMessages(messages: Message[]): TopWordsPerFriend[] {
+    const wordCounts: Record<string, Record<string, number>> = {};
 
     for (const message of messages) {
       const words = message.text.toLowerCase().split(/\s+/);
@@ -142,13 +151,14 @@ LIMIT 3;
       }
     }
 
-    const topWordsPerFriend: TopWordsPerFriend = {};
+    const topWordsPerFriend: TopWordsPerFriend[] = [];
     for (const handleIdKey of Object.keys(wordCounts)) {
       const sortedWords = Object.entries(wordCounts[handleIdKey])
         .map(([word, count]) => ({ word, count }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 10); // Top 10 words
-      topWordsPerFriend[parseInt(handleIdKey)] = sortedWords; // Convert back to number
+
+      topWordsPerFriend.push({ id: handleIdKey, wordCount: sortedWords });
     }
 
     return topWordsPerFriend;
