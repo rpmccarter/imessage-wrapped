@@ -3,7 +3,7 @@
 import { ReactNode, useCallback, useState } from 'react';
 import { FileInput } from './FileInput';
 import clsx from 'clsx';
-import { useData } from '@/context/DataContext';
+import { useData } from '@/contexts/DataContext';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 

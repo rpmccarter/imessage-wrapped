@@ -1,10 +1,9 @@
 'use client';
 
-import { useData } from '@/context/DataContext';
-import Link from 'next/link';
-import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { useData } from '@/contexts/DataContext';
+import { ReactNode, useState } from 'react';
 import { Carousel } from './Carousel';
-import html2canvas from 'html2canvas';
+import { useDownloadLink } from '@/hooks/useDownloadLinkAndCopy';
 
 const results = ['foo', 'bar', 'baz'];
 
@@ -23,7 +22,7 @@ const ResultSlides = () => {
 
   return (
     <div>
-      <Carousel>
+      <Carousel index={index} setIndex={setIndex}>
         {results.map((value, i) => (
           <div key={i} id={`result-${i}`} className="w-full h-full bg-sky-600">
             value
@@ -35,47 +34,16 @@ const ResultSlides = () => {
   );
 };
 
-const useCopyLinkToClipboard = () => {
-  return useCallback(() => {
-    try {
-    } catch (err) {
-      console.error('could not copy link to clipboard:', err);
-    }
-  }, []);
-};
-
-const useDownloadLink = (index: number) => {
-  const [link, setLink] = useState<string>();
-  useEffect(() => {
-    const element = document.getElementById(`result-${index}`);
-    if (!element) {
-      console.error('no image selected');
-      return;
-    }
-
-    html2canvas(element).then((canvas) =>
-      setLink(
-        canvas
-          .toDataURL('image/png')
-          .replace('image/png', 'image/octet-stream'),
-      ),
-    );
-  }, [index]);
-
-  return link;
-};
-
 type ButtonsParams = {
   index: number;
 };
 
 const Buttons = ({ index }: ButtonsParams) => {
-  const copyLinkToClipboard = useCopyLinkToClipboard();
-  const downloadLink = useDownloadLink(index);
+  const { link, copy } = useDownloadLink(index);
   return (
     <div className="flex gap-8 items-center justify-center">
-      <Button onClick={copyLinkToClipboard}>share link</Button>
-      <a href={downloadLink} download={'imessage-wrapped.png'}>
+      <Button onClick={copy}>copy image</Button>
+      <a href={link} download={'imessage-wrapped.png'}>
         <Button>save image</Button>
       </a>
     </div>
@@ -89,7 +57,10 @@ type ButtonParams = {
 
 const Button = ({ onClick, children }: ButtonParams) => {
   return (
-    <div onClick={onClick} className="flex items-center justify-center rounded-full w-60 bg-sky-600 px-6 py-4">
+    <div
+      onClick={onClick}
+      className="cursor-pointer flex items-center justify-center rounded-full w-60 bg-sky-600 px-6 py-4"
+    >
       {children}
     </div>
   );

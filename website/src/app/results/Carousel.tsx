@@ -1,18 +1,18 @@
 import { ReactNode, useState } from 'react';
 
 type CarouselParams = {
+  index: number;
+  setIndex?: (index: number) => void;
   children?: ReactNode[];
 };
-export const Carousel = ({ children }: CarouselParams) => {
-  const [index, setIndex] = useState(0);
-
+export const Carousel = ({ index, setIndex, children }: CarouselParams) => {
   return (
     <div
       className="duration-300 transition-transform flex inline-block relative h-[70vh] w-[70vw]"
       style={{ transform: `translateX(calc(${index} * -70vw))` }}
     >
       {children?.map((child, i) => (
-        <SlideFrame onClick={() => setIndex(i)} key={i}>
+        <SlideFrame onClick={() => setIndex?.(i)} key={i}>
           {child}
         </SlideFrame>
       ))}

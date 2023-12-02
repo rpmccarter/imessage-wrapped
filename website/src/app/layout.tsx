@@ -1,7 +1,7 @@
 'use client';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { DataContext, DataType } from '@/context/DataContext';
+import { DataContext, DataType } from '@/contexts/DataContext';
 import { useState } from 'react';
 
 const inter = Inter({ subsets: ['latin'] });
