@@ -13,11 +13,12 @@ const steps = [
   'download your phone data to your laptop',
 ];
 
-// TODO: define api endpoint
-const API_ENDPOINT = 'http://localhost:8000';
+const API_ENDPOINT = 'http://3.145.192.105';
 
 export default function GettingStarted() {
-  const [files, setFiles] = useState<FileList>();
+  const [chatFile, setChatFile] = useState<File>();
+  const [contactFile, setContactFile] = useState<File>();
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-24">
       <h1 className="text-4xl">how to get your wrapped</h1>
@@ -29,26 +30,34 @@ export default function GettingStarted() {
             </Step>
           ))}
         </div>
-        <FileInput value={files} setValue={setFiles} />
+        <div>
+          <FileInput accept=".db" value={chatFile} setValue={setChatFile} />
+          <FileInput
+            accept=".vcf"
+            value={contactFile}
+            setValue={setContactFile}
+          />
+        </div>
       </div>
-      <SubmitButton files={files} />
+      <SubmitButton chatFile={chatFile} contactFile={contactFile} />
     </main>
   );
 }
 
 type SubmitButtonProps = {
-  files?: FileList;
+  chatFile?: File;
+  contactFile?: File;
 };
 
-const SubmitButton = ({ files }: SubmitButtonProps) => {
+const SubmitButton = ({ chatFile, contactFile }: SubmitButtonProps) => {
   const submitFiles = useSubmitFiles();
 
   return (
     <button
-      onClick={files && (() => submitFiles(files))}
+      onClick={chatFile && (() => submitFiles(chatFile, contactFile))}
       className={clsx(
         'border px-4 py-2 rounded-full',
-        files === undefined
+        chatFile === undefined
           ? 'text-gray-600 bg-gray-600/20 border-gray-600 pointer-events-none'
           : 'text-sky-600 bg-sky-600/20 border-sky-600',
       )}
@@ -63,14 +72,23 @@ const useSubmitFiles = () => {
   const router = useRouter();
 
   return useCallback(
-    async (files: FileList) => {
-      const file = files[0];
-      if (file === undefined) {
-        console.error('no file found');
-      }
-
+    async (chatFile: File, contactFile?: File) => {
       try {
-        const response = await axios.post(API_ENDPOINT, file);
+        const formData = new FormData();
+        formData.append('chatdb', chatFile);
+        if (contactFile) {
+          formData.append('contactdb', contactFile);
+        }
+
+        const response = await axios({
+          method: 'POST',
+          url: API_ENDPOINT + '/multiplefiles',
+          data: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+
         console.log(response.data);
         setData(response.data);
         router.push('/results');
