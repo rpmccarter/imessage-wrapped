@@ -27,7 +27,7 @@ type SlideFrameParams = {
 
 const SlideFrame = ({ children, onClick }: SlideFrameParams) => {
   return (
-    <div onClick={onClick} className="p-4 flex-none h-[70vh] w-[70vw]">
+    <div onClick={onClick} className="p-6 flex-none h-[70vh] w-[70vw]">
       <div className="w-full h-full rounded-3xl overflow-hidden">
         {children}
       </div>
