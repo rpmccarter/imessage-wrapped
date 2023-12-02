@@ -10,7 +10,10 @@ dotenv.config();
 const app: Application = express();
 const port = process.env.PORT || 8000;
 
-const upload = multer({ dest: "uploads/" });
+const upload = multer({
+  dest: "uploads/",
+  limits: { fileSize: 1024 * 1024 * 1024 },
+});
 app.post("/upload", upload.single("chatdb"), async (req, res) => {
   if (req.file && req.file.path) {
     const db = new InMemoryDB(req.file.path);
