@@ -13,7 +13,7 @@ const steps = [
   'download your phone data to your laptop',
 ];
 
-const API_ENDPOINT = 'http://3.145.192.105';
+const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT || 'http://localhost:8000';
 
 export default function GettingStarted() {
   const [chatFile, setChatFile] = useState<File>();
@@ -31,7 +31,7 @@ export default function GettingStarted() {
           ))}
         </div>
         <div>
-          <FileInput accept=".db" value={chatFile} setValue={setChatFile} />
+          <FileInput accept=".db,.gz" value={chatFile} setValue={setChatFile} />
           <FileInput
             accept=".vcf"
             value={contactFile}
@@ -82,7 +82,7 @@ const useSubmitFiles = () => {
 
         const response = await axios({
           method: 'POST',
-          url: API_ENDPOINT + '/multiplefiles',
+          url: API_ENDPOINT + '/upload',
           data: formData,
           headers: {
             'Content-Type': 'multipart/form-data',
