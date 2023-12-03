@@ -2,7 +2,6 @@ import { useData } from '@/contexts/DataContext';
 import { useDownloadLink } from '@/hooks/useDownloadLinkAndCopy';
 import { useState, ReactNode } from 'react';
 import { Carousel } from './Carousel';
-import { sampleData } from './sampleData';
 import {
   ByMonthSlide,
   FriendSummarySlide,
@@ -14,9 +13,6 @@ import {
 export const ResultSlides = () => {
   let { data } = useData();
   const [index, setIndex] = useState(0);
-
-  // TODO: remove
-  data = sampleData;
 
   if (!data) return null;
 
