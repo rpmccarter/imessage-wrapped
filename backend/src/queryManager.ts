@@ -72,7 +72,7 @@ export class QueryManager {
       FROM message m
       WHERE is_from_me = 1
       AND strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'`
-    )) as TextsSentSummary;
+    )) as TextsSentSummary[];
 
     const topSenders = (await this.db.query(
       `SELECT 
@@ -86,6 +86,7 @@ export class QueryManager {
   ORDER BY messages_sent DESC
   LIMIT 10;`
     )) as TopSender[];
+
     const messagesPerDayResult = (await this.db.query(
       `SELECT 
         CASE strftime('%w', datetime((m.date / 1000000000) + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime'))
@@ -145,7 +146,7 @@ LIMIT 3;
     );
 
     return {
-      textSentSummary,
+      textSentSummary: textSentSummary[0],
       topSenders,
       messagesPerDay,
       topFriends,
