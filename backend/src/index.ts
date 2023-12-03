@@ -18,24 +18,42 @@ const upload = multer({
 app.use(bodyParser.json({ limit: "1gb" }));
 app.use(bodyParser.urlencoded({ extended: true, limit: "1gb" }));
 
-app.post("/upload", upload.single("chatdb"), async (req, res) => {
-  if (req.file && req.file.path) {
-    const db = new InMemoryDB(req.file.path);
-
-    const queryManager = new QueryManager(db);
+app.post(
+  "/upload",
+  upload.fields([{ name: "chatdb" }, { name: "contactdb" }]),
+  async (req: Request, res: Response) => {
     try {
-      const results = await queryManager.runQueries();
+      let results = {};
+
+      if (req.files && !Array.isArray(req.files)) {
+        const files = req.files as {
+          [fieldname: string]: Express.Multer.File[];
+        };
+
+        if (files.chatdb) {
+          for (const file of files.chatdb) {
+            const db = new InMemoryDB(file.path);
+            const queryManager = new QueryManager(db);
+
+            results = await queryManager.runQueries();
+
+            db.close();
+          }
+        }
+
+        if (files.contactdb) {
+          for (const file of files.contactdb) {
+          }
+        }
+      }
+
       res.json(results);
     } catch (error) {
       console.error(error);
       res.status(500).send("Error processing queries");
-    } finally {
-      db.close();
     }
-  } else {
-    res.status(400).send("No file uploaded.");
   }
-});
+);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Welcome to Express & TypeScript Server");
