@@ -3,7 +3,13 @@ import { useDownloadLink } from '@/hooks/useDownloadLinkAndCopy';
 import { useState, ReactNode } from 'react';
 import { Carousel } from './Carousel';
 import { sampleData } from './sampleData';
-import { ByMonthSlide, SummarySlide, TopSendersSlide } from './Slide';
+import {
+  ByMonthSlide,
+  FriendSummarySlide,
+  SummarySlide,
+  TopFriendsSlide,
+  TopSendersSlide,
+} from './Slide';
 
 export const ResultSlides = () => {
   let { data } = useData();
@@ -14,12 +20,20 @@ export const ResultSlides = () => {
 
   if (!data) return null;
 
+  const friends = Object.entries(data.topFriends).sort(
+    ([_a, a], [_b, b]) => a.message_count - b.message_count,
+  );
+
   return (
     <div>
       <Carousel index={index} setIndex={setIndex}>
         <SummarySlide index={0} data={data.textSentSummary} />
         <ByMonthSlide index={1} data={data.topMonths} />
         <TopSendersSlide index={2} data={data.topSenders} />
+        <TopFriendsSlide index={3} data={data.topFriends} />
+        <FriendSummarySlide index={4} id={friends[0][0]} data={friends[0][1]} />
+        <FriendSummarySlide index={5} id={friends[1][0]} data={friends[1][1]} />
+        <FriendSummarySlide index={6} id={friends[2][0]} data={friends[2][1]} />
       </Carousel>
       <Buttons index={index} />
     </div>

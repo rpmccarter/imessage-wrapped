@@ -16,7 +16,7 @@ export default function RootLayout({
   const pathname = usePathname();
   const [data, setData] = useState<ResultJawn>();
 
-  // if there is no data, go back to home page
+  // TODO: if there is no data, go back to home page
   // if (pathname !== '/' && pathname !== '/upload' && data === undefined) {
   //   router.replace('/');
   // }
