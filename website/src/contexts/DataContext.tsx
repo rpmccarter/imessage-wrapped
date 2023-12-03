@@ -1,11 +1,21 @@
 import { createContext, useContext } from 'react';
-
-// TODO: define datatype of results
-export type DataType = any;
+import { ResultJawn } from '../../../backend/src/queryManager';
+export type {
+  ResultJawn,
+  TextsSentSummary,
+  TopSender,
+  DayOfWeek,
+  MessagesPerDay,
+  TopFriends,
+  TopFriend,
+  TopWordsPerFriend,
+  Message,
+  WordCount,
+} from '../../../backend/src/queryManager';
 
 type DataContextType = {
-  setData: (data: DataType) => void;
-  data?: DataType;
+  setData: (data: ResultJawn) => void;
+  data?: ResultJawn;
 };
 
 export const DataContext = createContext<DataContextType>({

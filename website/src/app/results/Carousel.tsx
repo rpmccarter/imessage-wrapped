@@ -5,6 +5,7 @@ type CarouselParams = {
   setIndex?: (index: number) => void;
   children?: ReactNode[];
 };
+
 export const Carousel = ({ index, setIndex, children }: CarouselParams) => {
   return (
     <div

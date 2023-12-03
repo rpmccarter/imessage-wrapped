@@ -1,8 +1,9 @@
 'use client';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { DataContext, DataType } from '@/contexts/DataContext';
+import { DataContext, ResultJawn } from '@/contexts/DataContext';
 import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -11,7 +12,14 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [data, setData] = useState<DataType>();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [data, setData] = useState<ResultJawn>();
+
+  // if there is no data, go back to home page
+  // if (pathname !== '/' && pathname !== '/upload' && data === undefined) {
+  //   router.replace('/');
+  // }
 
   return (
     <html lang="en">

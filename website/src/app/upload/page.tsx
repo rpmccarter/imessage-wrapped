@@ -13,7 +13,8 @@ const steps = [
   'download your phone data to your laptop',
 ];
 
-const API_ENDPOINT = process.env.NEXT_PUBLIC_API_ENDPOINT || 'http://localhost:8000';
+const API_ENDPOINT =
+  process.env.NEXT_PUBLIC_API_ENDPOINT || 'http://localhost:8000';
 
 export default function GettingStarted() {
   const [chatFile, setChatFile] = useState<File>();
@@ -30,9 +31,15 @@ export default function GettingStarted() {
             </Step>
           ))}
         </div>
-        <div>
-          <FileInput accept=".db,.gz" value={chatFile} setValue={setChatFile} />
+        <div className="flex flex-col">
           <FileInput
+            title="chat.db file"
+            accept=".db,.gz"
+            value={chatFile}
+            setValue={setChatFile}
+          />
+          <FileInput
+            title="contacts file"
             accept=".vcf"
             value={contactFile}
             setValue={setContactFile}
@@ -118,9 +125,7 @@ const Tail = () => {
   return (
     <div
       className="w-5 h-5 left-[-5px] bottom-[2px] shadow-[6px_4px_0_0] shadow-sky-600 bottom-0 absolute"
-      style={{
-        borderRadius: '50%',
-      }}
+      style={{ borderRadius: '50%' }}
     />
   );
 };
