@@ -87,6 +87,7 @@ export type ResultJawn = {
 
 export class QueryManager {
   private db: InMemoryDB;
+  map: Record<string, string> = {};
 
   constructor(db: InMemoryDB) {
     this.db = db;
@@ -195,17 +196,23 @@ HAVING (SUM(CASE WHEN m.is_from_me = 1 THEN 1 ELSE 0 END) > 50)
 ORDER BY imbalance ASC, (sent + received) DESC
 LIMIT 1;`)) as UnbalancedFriend[];
 
+    const randomNamesMap = this.createIdToNameMap([
+      ...topSenders.map((sender) => sender.id),
+      ...topFriendsRaw.map((friend) => friend.id),
+      unbalancedFriend[0].id,
+    ]);
+
     const topSenderz: TopSender[] = topSenders.map((sender) => {
       return {
         ...sender,
-        id: contacts[sender.id.replace("+", "")] ?? sender.id,
+        id: randomNamesMap[sender.id] ?? sender.id,
       };
     });
 
     const topFriendz: TopFriends = {};
     topFriendsRaw.forEach((friend) => {
       const friendId = friend.id;
-      const friendName = contacts[friendId.replace("+", "")] || friendId;
+      const friendName = randomNamesMap[friendId] || friendId;
 
       topFriendz[friendName] = {
         id: friendName,
@@ -217,8 +224,7 @@ LIMIT 1;`)) as UnbalancedFriend[];
     });
 
     unbalancedFriend[0].id =
-      contacts[unbalancedFriend[0].id.replace("+", "")] ??
-      unbalancedFriend[0].id;
+      randomNamesMap[unbalancedFriend[0].id] ?? unbalancedFriend[0].id;
     return {
       textSentSummary: textSentSummary[0],
       topSenders: topSenderz,
@@ -280,6 +286,46 @@ LIMIT 1;`)) as UnbalancedFriend[];
     }
 
     return topWordsPerFriend;
+  }
+
+  generateRandomName() {
+    const names = [
+      "Alice",
+      "Bob",
+      "Charlie",
+      "David",
+      "Eva",
+      "Fiona",
+      "George",
+      "Hannah",
+      "Ian",
+      "Julia",
+      "Kyle",
+      "Laura",
+      "Mike",
+      "Nina",
+      "Oscar",
+      "Paula",
+      "Quincy",
+      "Rachel",
+      "Steve",
+      "Tina",
+      "Uma",
+      "Victor",
+      "Wendy",
+      "Xander",
+      "Yvonne",
+      "Zach",
+    ];
+    return names[Math.floor(Math.random() * names.length)];
+  }
+
+  // Function to create a mapping from id to random name
+  createIdToNameMap(ids: any) {
+    ids.forEach((id: any) => {
+      this.map[id] = this.generateRandomName();
+    });
+    return this.map;
   }
 
   getTopEmojisPerFriend(messages: Message[]): Record<string, Emoji[]> {
