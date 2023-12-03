@@ -31,7 +31,7 @@ export type TopFriend = {
   id: string;
   message_count: number;
   top_word_count: WordCount[];
-  top_emojis: string[];
+  top_emojis: Emoji[];
 };
 
 export type TopWordsPerFriend = {
@@ -42,6 +42,11 @@ export type TopWordsPerFriend = {
 export type Message = {
   handle_id: number;
   text: string;
+};
+
+export type Emoji = {
+  emoji: string;
+  count: number;
 };
 
 export type WordCount = {
@@ -206,8 +211,7 @@ LIMIT 3;
     return topWordsPerFriend;
   }
 
-  getTopEmojisPerFriend(messages: Message[]): Record<string, string[]> {
-    console.log(JSON.stringify(messages));
+  getTopEmojisPerFriend(messages: Message[]): Record<string, Emoji[]> {
     const emojiCountsPerFriend: Record<string, Record<string, number>> = {};
     const regex = emoji.default();
 
@@ -226,14 +230,16 @@ LIMIT 3;
       }
     }
 
-    const topEmojisPerFriend: Record<string, string[]> = {};
+    const topEmojisPerFriend: Record<string, Emoji[]> = {};
     for (const friendId in emojiCountsPerFriend) {
-      topEmojisPerFriend[friendId] = Object.entries(
-        emojiCountsPerFriend[friendId]
-      )
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map((entry) => entry[0]);
+      if (emojiCountsPerFriend.hasOwnProperty(friendId)) {
+        topEmojisPerFriend[friendId] = Object.entries(
+          emojiCountsPerFriend[friendId]
+        )
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5) // Take the top 5 emojis
+          .map(([emoji, count]) => ({ emoji, count }));
+      }
     }
 
     return topEmojisPerFriend;
