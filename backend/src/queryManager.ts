@@ -2,53 +2,53 @@ import { stopWords } from "./consts";
 import { InMemoryDB } from "./dbWrapper";
 import * as emoji from "emoji-regex";
 
-type TextsSentSummary = {
+export type TextsSentSummary = {
   total_texts_sent: number;
   first_text_date: string;
   last_text_date: string;
 };
 
-type TopSender = {
+export type TopSender = {
   id: string;
   messages_sent: number;
 };
 
-type DayOfWeek =
-  | "Sunday"
+export type DayOfWeek =
   | "Monday"
+  | "Sunday"
   | "Tuesday"
   | "Wednesday"
   | "Thursday"
   | "Friday"
   | "Saturday";
 
-type MessagesPerDay = Record<DayOfWeek, number>;
+export type MessagesPerDay = Record<DayOfWeek, number>;
 
-type TopFriends = Record<string, TopFriend>;
+export type TopFriends = Record<string, TopFriend>;
 
-type TopFriend = {
+export type TopFriend = {
   id: string;
   message_count: number;
   top_word_count: WordCount[];
   top_emojis: string[];
 };
 
-type TopWordsPerFriend = {
+export type TopWordsPerFriend = {
   id: string;
   wordCount: WordCount[];
 };
 
-type Message = {
+export type Message = {
   handle_id: number;
   text: string;
 };
 
-type WordCount = {
+export type WordCount = {
   word: string;
   count: number;
 };
 
-type result_jawn = {
+export type ResultJawn = {
   textSentSummary: TextsSentSummary[];
   topSenders: TopSender[];
   messagesPerDay: MessagesPerDay;
@@ -62,7 +62,7 @@ export class QueryManager {
     this.db = db;
   }
 
-  async runQueries(): Promise<result_jawn> {
+  async runQueries(): Promise<ResultJawn> {
     const textSentSummary = (await this.db.query(
       `SELECT 
         COUNT(*) as total_texts_sent,
