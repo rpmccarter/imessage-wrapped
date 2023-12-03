@@ -51,13 +51,13 @@ export class QueryManager {
   }
 
   async runQueries(): Promise<{
-    resultA: TextsSentSummary[];
-    resultB: TopSender[];
-    resultC: MessagesPerDay;
-    resultD: TopFriend[];
-    resultE: TopWordsPerFriend[];
+    textSentSummary: TextsSentSummary[];
+    topSenders: TopSender[];
+    messagesPerDay: MessagesPerDay;
+    topFriends: TopFriend[];
+    topWordsPerFriend: TopWordsPerFriend[];
   }> {
-    const resultA = (await this.db.query(
+    const textSentSummary = (await this.db.query(
       `SELECT 
         COUNT(*) as total_texts_sent,
         MIN(datetime(date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) as first_text_date,
@@ -66,7 +66,7 @@ export class QueryManager {
       WHERE is_from_me = 1`
     )) as TextsSentSummary[];
 
-    const resultB = (await this.db.query(
+    const topSenders = (await this.db.query(
       `SELECT 
       h.id, 
       COUNT(*) as messages_sent
@@ -77,7 +77,7 @@ export class QueryManager {
   ORDER BY messages_sent DESC
   LIMIT 10;`
     )) as TopSender[];
-    const dayOfWeekQueryResults = (await this.db.query(
+    const messagesPerDayResult = (await this.db.query(
       `SELECT 
         CASE strftime('%w', datetime((m.date / 1000000000) + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime'))
           WHEN '0' THEN 'Sunday'
@@ -95,7 +95,7 @@ export class QueryManager {
       ORDER BY messages_sent DESC;`
     )) as { day_of_week: DayOfWeek; messages_sent: number }[];
 
-    const resultC: MessagesPerDay = dayOfWeekQueryResults.reduce(
+    const messagesPerDay: MessagesPerDay = messagesPerDayResult.reduce(
       (acc, current) => {
         acc[current.day_of_week] = current.messages_sent;
         return acc;
@@ -103,7 +103,7 @@ export class QueryManager {
       {} as MessagesPerDay
     );
 
-    const resultD = (await this.db.query(`SELECT 
+    const topFriends = (await this.db.query(`SELECT 
     h.id, 
     COUNT(*) as message_count
 FROM message m
@@ -115,11 +115,17 @@ ORDER BY message_count DESC
 LIMIT 3;
 `)) as TopFriend[];
 
-    const messages = await this.fetchMessagesForTopFriends(resultD);
+    const messages = await this.fetchMessagesForTopFriends(topFriends);
 
-    const resultE = this.processMessages(messages);
+    const topWordsPerFriend = this.processMessages(messages);
 
-    return { resultA, resultB, resultC, resultD, resultE };
+    return {
+      textSentSummary,
+      topSenders,
+      messagesPerDay,
+      topFriends,
+      topWordsPerFriend,
+    };
   }
 
   private async fetchMessagesForTopFriends(
@@ -127,9 +133,13 @@ LIMIT 3;
   ): Promise<Message[]> {
     let messages: Message[] = [];
     for (const friend of topFriends) {
-      const friendMessages = (await this.db.query(
-        `SELECT handle_id, text FROM message WHERE handle_id = ${friend.id}`
-      )) as Message[];
+      const friendMessages = (await this.db.query(`
+            SELECT m.handle_id, m.text 
+            FROM message m
+            JOIN handle h ON m.handle_id = h.ROWID
+            WHERE h.id = '${friend.id}'
+            AND strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'
+        `)) as Message[];
       messages = messages.concat(friendMessages);
     }
     return messages;
@@ -138,18 +148,21 @@ LIMIT 3;
   private processMessages(messages: Message[]): TopWordsPerFriend[] {
     const wordCounts: Record<string, Record<string, number>> = {};
 
-    for (const message of messages) {
-      const words = message.text.toLowerCase().split(/\s+/);
-      const handleIdKey = message.handle_id.toString(); // Convert to string
+    messages.forEach((message, index) => {
+      // Check if message.text is not null or empty
+      if (message.text) {
+        const words = message.text.toLowerCase().split(/\s+/);
+        const handleIdKey = message.handle_id.toString();
 
-      for (const word of words) {
-        if (!stopWords.includes(word) && word.trim() !== "") {
-          wordCounts[handleIdKey] = wordCounts[handleIdKey] || {};
-          wordCounts[handleIdKey][word] =
-            (wordCounts[handleIdKey][word] || 0) + 1;
-        }
+        words.forEach((word) => {
+          if (!stopWords.includes(word) && word.trim() !== "") {
+            wordCounts[handleIdKey] = wordCounts[handleIdKey] || {};
+            wordCounts[handleIdKey][word] =
+              (wordCounts[handleIdKey][word] || 0) + 1;
+          }
+        });
       }
-    }
+    });
 
     const topWordsPerFriend: TopWordsPerFriend[] = [];
     for (const handleIdKey of Object.keys(wordCounts)) {
