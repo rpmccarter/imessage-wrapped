@@ -31,27 +31,27 @@ app.post(
           [fieldname: string]: Express.Multer.File[];
         };
 
+        let contacts: Record<string, string> = {};
+        if (files.contactdb) {
+          for (const file of files.contactdb) {
+            contacts = parseVcard(file.path);
+            console.log(contacts);
+          }
+        }
+
         if (files.chatdb) {
           for (const file of files.chatdb) {
             const db = new InMemoryDB(file.path);
             const queryManager = new QueryManager(db);
 
-            results = await queryManager.runQueries();
+            results = await queryManager.runQueries(contacts);
 
             db.close();
           }
         }
-
-
-        if (files.contactdb) {
-          for (const file of files.contactdb) {
-            const contacts = parseVcard(file.path);
-            console.log(contacts);
-          }
-        }
       }
 
-      res.setHeader('access-control-allow-origin', '*');
+      res.setHeader("access-control-allow-origin", "*");
       res.json(results);
     } catch (error) {
       console.error(error);

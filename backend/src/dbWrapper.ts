@@ -1,5 +1,4 @@
 import sqlite3 from "sqlite3";
-import fs from "fs";
 
 export class InMemoryDB {
   db: sqlite3.Database;

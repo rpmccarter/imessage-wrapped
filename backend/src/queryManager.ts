@@ -92,7 +92,7 @@ export class QueryManager {
     this.db = db;
   }
 
-  async runQueries(): Promise<ResultJawn> {
+  async runQueries(contacts: Record<string, string>): Promise<ResultJawn> {
     const textSentSummary = (await this.db.query(
       `SELECT 
         COUNT(*) as total_texts_sent,
@@ -195,11 +195,35 @@ HAVING (SUM(CASE WHEN m.is_from_me = 1 THEN 1 ELSE 0 END) > 50)
 ORDER BY imbalance ASC, (sent + received) DESC
 LIMIT 1;`)) as UnbalancedFriend[];
 
+    const topSenderz: TopSender[] = topSenders.map((sender) => {
+      return {
+        ...sender,
+        id: contacts[sender.id.replace("+", "")] ?? sender.id,
+      };
+    });
+
+    const topFriendz: TopFriends = {};
+    topFriendsRaw.forEach((friend) => {
+      const friendId = friend.id;
+      const friendName = contacts[friendId.replace("+", "")] || friendId;
+
+      topFriendz[friendName] = {
+        id: friendName,
+        message_count: friend.message_count,
+        top_word_count:
+          topWordsPerFriend.find((f) => f.id === friendId)?.wordCount || [],
+        top_emojis: topEmojisPerFriend[friendId] || [],
+      };
+    });
+
+    unbalancedFriend[0].id =
+      contacts[unbalancedFriend[0].id.replace("+", "")] ??
+      unbalancedFriend[0].id;
     return {
       textSentSummary: textSentSummary[0],
-      topSenders,
+      topSenders: topSenderz,
       topMonths,
-      topFriends,
+      topFriends: topFriendz,
       unbalancedFriend: unbalancedFriend[0],
     };
   }
