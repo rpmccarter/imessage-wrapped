@@ -1,6 +1,7 @@
 import { stopWords } from "./consts";
 import { InMemoryDB } from "./dbWrapper";
 import * as emoji from "emoji-regex";
+import * as sw from "stopword";
 
 export type TextsSentSummary = {
   total_texts_sent: number;
@@ -68,8 +69,9 @@ export class QueryManager {
         COUNT(*) as total_texts_sent,
         MIN(datetime(date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) as first_text_date,
         MAX(datetime(date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) as last_text_date
-      FROM message
-      WHERE is_from_me = 1`
+      FROM message m
+      WHERE is_from_me = 1
+      AND strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'`
     )) as TextsSentSummary[];
 
     const topSenders = (await this.db.query(
@@ -79,6 +81,7 @@ export class QueryManager {
   FROM message m
   JOIN handle h ON m.handle_id = h.ROWID
   WHERE m.is_from_me = 1
+  AND strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'
   GROUP BY h.id
   ORDER BY messages_sent DESC
   LIMIT 10;`
@@ -96,7 +99,8 @@ export class QueryManager {
         END as day_of_week,
         COUNT(*) as messages_sent
       FROM message m
-      WHERE m.is_from_me = 1
+        WHERE m.is_from_me = 1
+        AND strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'
       GROUP BY day_of_week
       ORDER BY messages_sent DESC;`
     )) as { day_of_week: DayOfWeek; messages_sent: number }[];
@@ -116,6 +120,7 @@ FROM message m
 JOIN handle h ON m.handle_id = h.ROWID
 WHERE 
     strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'
+    AND m.is_from_me = 1
 GROUP BY h.id
 ORDER BY message_count DESC
 LIMIT 3;
@@ -153,15 +158,17 @@ LIMIT 3;
     let messages: Message[] = [];
     for (const friend of topFriends) {
       const friendMessages = (await this.db.query(`
-            SELECT m.handle_id, m.text 
+            SELECT h.id as handle_id, m.text 
             FROM message m
             JOIN handle h ON m.handle_id = h.ROWID
             WHERE h.id = '${friend.id}'
-            AND strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'
         `)) as Message[];
+
       messages = messages.concat(friendMessages);
     }
-    return messages;
+    return messages.filter(
+      (messages) => messages.text != null && messages.text != ""
+    );
   }
 
   private processMessages(messages: Message[]): TopWordsPerFriend[] {
@@ -169,11 +176,14 @@ LIMIT 3;
 
     messages.forEach((message, index) => {
       if (message.text) {
-        const words = message.text.toLowerCase().split(/\s+/);
-        const handleIdKey = message.handle_id.toString();
+        const words = sw.removeStopwords(
+          message.text.toLowerCase().split(/\s+/),
+          stopWords
+        );
+        const handleIdKey = message.handle_id;
 
         words.forEach((word) => {
-          if (!stopWords.includes(word) && word.trim() !== "") {
+          if (word.trim() !== "") {
             wordCounts[handleIdKey] = wordCounts[handleIdKey] || {};
             wordCounts[handleIdKey][word] =
               (wordCounts[handleIdKey][word] || 0) + 1;
@@ -187,7 +197,7 @@ LIMIT 3;
       const sortedWords = Object.entries(wordCounts[handleIdKey])
         .map(([word, count]) => ({ word, count }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 10); // Top 10 words
+        .slice(0, 5);
 
       topWordsPerFriend.push({ id: handleIdKey, wordCount: sortedWords });
     }
@@ -196,6 +206,7 @@ LIMIT 3;
   }
 
   getTopEmojisPerFriend(messages: Message[]): Record<string, string[]> {
+    console.log(JSON.stringify(messages));
     const emojiCountsPerFriend: Record<string, Record<string, number>> = {};
     const regex = emoji.default();
 
