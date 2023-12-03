@@ -47,6 +47,7 @@ app.post(
         }
       }
 
+      res.setHeader('access-control-allow-origin', '*');
       res.json(results);
     } catch (error) {
       console.error(error);
