@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import multer from "multer";
 import { InMemoryDB } from "./dbWrapper";
 import { QueryManager } from "./queryManager";
+import { parseVcard } from "./vcard";
 import * as bodyParser from "body-parser";
 
 //For env File
@@ -41,8 +42,11 @@ app.post(
           }
         }
 
+
         if (files.contactdb) {
           for (const file of files.contactdb) {
+            const contacts = parseVcard(file.path);
+            console.log(contacts);
           }
         }
       }

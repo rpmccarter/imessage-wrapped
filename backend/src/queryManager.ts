@@ -188,7 +188,7 @@ LIMIT 3;
         );
         const handleIdKey = message.handle_id;
 
-        words.forEach((word) => {
+        words.forEach((word: any) => {
           if (word.trim() !== "") {
             wordCounts[handleIdKey] = wordCounts[handleIdKey] || {};
             wordCounts[handleIdKey][word] =
