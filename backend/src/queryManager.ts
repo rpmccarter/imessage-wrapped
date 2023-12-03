@@ -70,11 +70,19 @@ export type WordCount = {
   count: number;
 };
 
+export type UnbalancedFriend = {
+  id: string;
+  sent: number;
+  received: number;
+  ratio: number;
+};
+
 export type ResultJawn = {
   textSentSummary: TextsSentSummary;
   topSenders: TopSender[];
   topMonths: TopMonths;
   topFriends: TopFriends;
+  unbalancedFriend: UnbalancedFriend;
 };
 
 export class QueryManager {
@@ -171,11 +179,28 @@ LIMIT 3;
       {} as Record<string, TopFriend>
     );
 
+    const unbalancedFriend = (await this.db.query(`SELECT 
+    h.id, 
+    SUM(CASE WHEN m.is_from_me = 1 THEN 1 ELSE 0 END) as sent,
+    SUM(CASE WHEN m.is_from_me = 0 THEN 1 ELSE 0 END) as received,
+    ABS(SUM(CASE WHEN m.is_from_me = 1 THEN 1 ELSE 0 END) - SUM(CASE WHEN m.is_from_me = 0 THEN 1 ELSE 0 END)) as imbalance,
+    CASE 
+        WHEN SUM(CASE WHEN m.is_from_me = 0 THEN 1 ELSE 0 END) = 0 THEN NULL
+        ELSE (SUM(CASE WHEN m.is_from_me = 1 THEN 1 ELSE 0 END) * 1.0) / SUM(CASE WHEN m.is_from_me = 0 THEN 1 ELSE 0 END)
+    END as ratio
+FROM message m
+JOIN handle h ON m.handle_id = h.ROWID
+GROUP BY h.id
+HAVING (SUM(CASE WHEN m.is_from_me = 1 THEN 1 ELSE 0 END) > 50)
+ORDER BY imbalance ASC, (sent + received) DESC
+LIMIT 1;`)) as UnbalancedFriend[];
+
     return {
       textSentSummary: textSentSummary[0],
       topSenders,
       topMonths,
       topFriends,
+      unbalancedFriend: unbalancedFriend[0],
     };
   }
 
@@ -225,7 +250,7 @@ LIMIT 3;
       const sortedWords = Object.entries(wordCounts[handleIdKey])
         .map(([word, count]) => ({ word, count }))
         .sort((a, b) => b.count - a.count)
-        .slice(0, 50);
+        .slice(0, 5);
 
       topWordsPerFriend.push({ id: handleIdKey, wordCount: sortedWords });
     }
