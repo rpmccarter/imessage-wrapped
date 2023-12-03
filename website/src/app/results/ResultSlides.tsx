@@ -3,19 +3,23 @@ import { useDownloadLink } from '@/hooks/useDownloadLinkAndCopy';
 import { useState, ReactNode } from 'react';
 import { Carousel } from './Carousel';
 import { sampleData } from './sampleData';
+import { ByMonthSlide, SummarySlide, TopSendersSlide } from './Slide';
 
 export const ResultSlides = () => {
-  const { data } = useData();
+  let { data } = useData();
   const [index, setIndex] = useState(0);
+
+  // TODO: remove
+  data = sampleData;
+
+  if (!data) return null;
 
   return (
     <div>
       <Carousel index={index} setIndex={setIndex}>
-        {Object.keys(sampleData.topFriends).map((value, i) => (
-          <div key={i} id={`result-${i}`} className="w-full h-full bg-sky-600">
-            {value}
-          </div>
-        ))}
+        <SummarySlide index={0} data={data.textSentSummary} />
+        <ByMonthSlide index={1} data={data.topMonths} />
+        <TopSendersSlide index={2} data={data.topSenders} />
       </Carousel>
       <Buttons index={index} />
     </div>
