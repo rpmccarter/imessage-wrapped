@@ -25,6 +25,22 @@ export type DayOfWeek =
 
 export type MessagesPerDay = Record<DayOfWeek, number>;
 
+export type MonthOfYear =
+  | "January"
+  | "February"
+  | "March"
+  | "April"
+  | "May"
+  | "June"
+  | "July"
+  | "August"
+  | "September"
+  | "October"
+  | "November"
+  | "December";
+
+export type TopMonths = Record<MonthOfYear, number>;
+
 export type TopFriends = Record<string, TopFriend>;
 
 export type TopFriend = {
@@ -54,11 +70,19 @@ export type WordCount = {
   count: number;
 };
 
+export type UnbalancedFriend = {
+  id: string;
+  sent: number;
+  received: number;
+  ratio: number;
+};
+
 export type ResultJawn = {
   textSentSummary: TextsSentSummary;
   topSenders: TopSender[];
-  messagesPerDay: MessagesPerDay;
+  topMonths: TopMonths;
   topFriends: TopFriends;
+  unbalancedFriend: UnbalancedFriend;
 };
 
 export class QueryManager {
@@ -92,31 +116,36 @@ export class QueryManager {
   LIMIT 10;`
     )) as TopSender[];
 
-    const messagesPerDayResult = (await this.db.query(
+    const messagesPerMonthResult = (await this.db.query(
       `SELECT 
-        CASE strftime('%w', datetime((m.date / 1000000000) + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime'))
-          WHEN '0' THEN 'Sunday'
-          WHEN '1' THEN 'Monday'
-          WHEN '2' THEN 'Tuesday'
-          WHEN '3' THEN 'Wednesday'
-          WHEN '4' THEN 'Thursday'
-          WHEN '5' THEN 'Friday'
-          WHEN '6' THEN 'Saturday'
-        END as day_of_week,
+        CASE strftime('%m', datetime((m.date / 1000000000) + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime'))
+          WHEN '01' THEN 'January'
+          WHEN '02' THEN 'February'
+          WHEN '03' THEN 'March'
+          WHEN '04' THEN 'April'
+          WHEN '05' THEN 'May'
+          WHEN '06' THEN 'June'
+          WHEN '07' THEN 'July'
+          WHEN '08' THEN 'August'
+          WHEN '09' THEN 'September'
+          WHEN '10' THEN 'October'
+          WHEN '11' THEN 'November'
+          WHEN '12' THEN 'December'
+        END as month_of_year,
         COUNT(*) as messages_sent
       FROM message m
         WHERE m.is_from_me = 1
         AND strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'
-      GROUP BY day_of_week
+      GROUP BY month_of_year
       ORDER BY messages_sent DESC;`
-    )) as { day_of_week: DayOfWeek; messages_sent: number }[];
+    )) as { month_of_year: MonthOfYear; messages_sent: number }[];
 
-    const messagesPerDay: MessagesPerDay = messagesPerDayResult.reduce(
+    const topMonths: TopMonths = messagesPerMonthResult.reduce(
       (acc, current) => {
-        acc[current.day_of_week] = current.messages_sent;
+        acc[current.month_of_year] = current.messages_sent;
         return acc;
       },
-      {} as MessagesPerDay
+      {} as TopMonths
     );
 
     const topFriendsRaw = (await this.db.query(`SELECT 
@@ -150,11 +179,28 @@ LIMIT 3;
       {} as Record<string, TopFriend>
     );
 
+    const unbalancedFriend = (await this.db.query(`SELECT 
+    h.id, 
+    SUM(CASE WHEN m.is_from_me = 1 THEN 1 ELSE 0 END) as sent,
+    SUM(CASE WHEN m.is_from_me = 0 THEN 1 ELSE 0 END) as received,
+    ABS(SUM(CASE WHEN m.is_from_me = 1 THEN 1 ELSE 0 END) - SUM(CASE WHEN m.is_from_me = 0 THEN 1 ELSE 0 END)) as imbalance,
+    CASE 
+        WHEN SUM(CASE WHEN m.is_from_me = 0 THEN 1 ELSE 0 END) = 0 THEN NULL
+        ELSE (SUM(CASE WHEN m.is_from_me = 1 THEN 1 ELSE 0 END) * 1.0) / SUM(CASE WHEN m.is_from_me = 0 THEN 1 ELSE 0 END)
+    END as ratio
+FROM message m
+JOIN handle h ON m.handle_id = h.ROWID
+GROUP BY h.id
+HAVING (SUM(CASE WHEN m.is_from_me = 1 THEN 1 ELSE 0 END) > 50)
+ORDER BY imbalance ASC, (sent + received) DESC
+LIMIT 1;`)) as UnbalancedFriend[];
+
     return {
       textSentSummary: textSentSummary[0],
       topSenders,
-      messagesPerDay,
+      topMonths,
       topFriends,
+      unbalancedFriend: unbalancedFriend[0],
     };
   }
 
@@ -168,6 +214,7 @@ LIMIT 3;
             FROM message m
             JOIN handle h ON m.handle_id = h.ROWID
             WHERE h.id = '${friend.id}'
+            AND text NOTNULL;
         `)) as Message[];
 
       messages = messages.concat(friendMessages);
