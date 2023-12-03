@@ -25,6 +25,8 @@ export type DayOfWeek =
 
 export type MessagesPerDay = Record<DayOfWeek, number>;
 
+export type TopMonths = Record<string, number>;
+
 export type TopFriends = Record<string, TopFriend>;
 
 export type TopFriend = {
@@ -168,6 +170,7 @@ LIMIT 3;
             FROM message m
             JOIN handle h ON m.handle_id = h.ROWID
             WHERE h.id = '${friend.id}'
+            AND text NOTNULL;
         `)) as Message[];
 
       messages = messages.concat(friendMessages);
