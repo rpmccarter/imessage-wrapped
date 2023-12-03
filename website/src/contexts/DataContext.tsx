@@ -12,29 +12,29 @@ export type TopSender = {
 };
 
 export type DayOfWeek =
-  | "Monday"
-  | "Sunday"
-  | "Tuesday"
-  | "Wednesday"
-  | "Thursday"
-  | "Friday"
-  | "Saturday";
+  | 'Monday'
+  | 'Sunday'
+  | 'Tuesday'
+  | 'Wednesday'
+  | 'Thursday'
+  | 'Friday'
+  | 'Saturday';
 
 export type MessagesPerDay = Record<DayOfWeek, number>;
 
 export type MonthOfYear =
-  | "January"
-  | "February"
-  | "March"
-  | "April"
-  | "May"
-  | "June"
-  | "July"
-  | "August"
-  | "September"
-  | "October"
-  | "November"
-  | "December";
+  | 'January'
+  | 'February'
+  | 'March'
+  | 'April'
+  | 'May'
+  | 'June'
+  | 'July'
+  | 'August'
+  | 'September'
+  | 'October'
+  | 'November'
+  | 'December';
 
 export type TopMonths = Record<MonthOfYear, number>;
 

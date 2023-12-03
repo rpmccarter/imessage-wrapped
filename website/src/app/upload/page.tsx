@@ -6,6 +6,7 @@ import clsx from 'clsx';
 import { useData } from '@/contexts/DataContext';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { BeatLoader } from 'react-spinners';
 
 const steps = [
   'download your phone data to your laptop',
@@ -57,29 +58,39 @@ type SubmitButtonProps = {
 };
 
 const SubmitButton = ({ chatFile, contactFile }: SubmitButtonProps) => {
-  const submitFiles = useSubmitFiles();
+  const [isSending, setIsSending] = useState(false);
+  const submitFiles = useSubmitFiles(setIsSending);
 
   return (
     <button
-      onClick={chatFile && (() => submitFiles(chatFile, contactFile))}
+      onClick={
+        chatFile && !isSending
+          ? () => submitFiles(chatFile, contactFile)
+          : undefined
+      }
       className={clsx(
-        'border px-4 py-2 rounded-full',
+        'border px-4 py-2 rounded-full items-center ',
         chatFile === undefined
           ? 'text-gray-600 bg-gray-600/20 border-gray-600 pointer-events-none'
           : 'text-sky-600 bg-sky-600/20 border-sky-600',
       )}
     >
-      {"let's go"}
+      {isSending ? (
+        <BeatLoader className="pt-1" />
+      ) : (
+        <div className="py-0.5">{"let's go"}</div>
+      )}
     </button>
   );
 };
 
-const useSubmitFiles = () => {
+const useSubmitFiles = (setIsSending: (val: boolean) => void) => {
   const { setData } = useData();
   const router = useRouter();
 
   return useCallback(
     async (chatFile: File, contactFile?: File) => {
+      setIsSending(true);
       try {
         const formData = new FormData();
         formData.append('chatdb', chatFile);
@@ -102,8 +113,9 @@ const useSubmitFiles = () => {
       } catch (err) {
         console.error('an error occurred while fetching your results:', err);
       }
+      setIsSending(false);
     },
-    [setData, router],
+    [setData, router, setIsSending],
   );
 };
 

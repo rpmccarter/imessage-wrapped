@@ -158,9 +158,9 @@ export const TopFriendsSlide = ({ index, data }: TopFriendsSlideProps) => {
         {friends.map(([name, { message_count }], i) => {
           return (
             <div key={i} className="flex gap-6">
-              <div className="flex">
+              <div className="flex gap-2">
                 <div className="text-6xl">{i + 1}</div>
-                <div className="text-2xl">{name}</div>
+                <div className="text-4xl">{name}</div>
               </div>
               <div>
                 <div className="text-4xl">
@@ -224,8 +224,8 @@ export const FriendSummarySlide = ({
       <div className="flex flex-col gap-1">
         {data.top_word_count.map(({ word }, i) => {
           return (
-            <div key={i} className="flex gap-6">
-              <div className="text-2xl leading-none">{i + 1}</div>
+            <div key={i} className="flex gap-2">
+              <div className="text-2xl leading-none">{i + 1}.</div>
               <div className="text-2xl leading-none">{word}</div>
             </div>
           );
@@ -238,8 +238,8 @@ export const FriendSummarySlide = ({
       <div className="flex flex-col gap-2">
         {data.top_emojis.map(({ emoji }, i) => {
           return (
-            <div key={i} className="flex gap-6">
-              <div className="text-6xl">{i + 1}</div>
+            <div key={i} className="flex gap-2">
+              <div className="text-2xl">{i + 1}.</div>
               <div className="text-2xl">{emoji}</div>
             </div>
           );
