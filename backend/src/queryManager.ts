@@ -50,7 +50,7 @@ export type WordCount = {
 };
 
 export type ResultJawn = {
-  textSentSummary: TextsSentSummary[];
+  textSentSummary: TextsSentSummary;
   topSenders: TopSender[];
   messagesPerDay: MessagesPerDay;
   topFriends: TopFriends;
@@ -72,7 +72,7 @@ export class QueryManager {
       FROM message m
       WHERE is_from_me = 1
       AND strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'`
-    )) as TextsSentSummary[];
+    )) as TextsSentSummary;
 
     const topSenders = (await this.db.query(
       `SELECT 
