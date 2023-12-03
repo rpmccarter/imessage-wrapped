@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import multer from "multer";
 import { InMemoryDB } from "./dbWrapper";
 import { QueryManager } from "./queryManager";
+import * as bodyParser from "body-parser";
 
 //For env File
 dotenv.config();
@@ -14,6 +15,9 @@ const upload = multer({
   dest: "uploads/",
   limits: { fileSize: 1024 * 1024 * 1024 },
 });
+app.use(bodyParser.json({ limit: "1gb" }));
+app.use(bodyParser.urlencoded({ extended: true, limit: "1gb" }));
+
 app.post("/upload", upload.single("chatdb"), async (req, res) => {
   if (req.file && req.file.path) {
     const db = new InMemoryDB(req.file.path);
