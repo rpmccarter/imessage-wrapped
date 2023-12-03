@@ -9,8 +9,8 @@ import { useRouter } from 'next/navigation';
 
 const steps = [
   'download your phone data to your laptop',
-  'download your phone data to your laptop',
-  'download your phone data to your laptop',
+  'export a file containing your chats',
+  'export a file with your contact data',
 ];
 
 const API_ENDPOINT =
