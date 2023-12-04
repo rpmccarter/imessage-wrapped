@@ -205,7 +205,7 @@ LIMIT 1;`)) as UnbalancedFriend[];
     const topSenderz: TopSender[] = topSenders.map((sender) => {
       return {
         ...sender,
-        id: randomNamesMap[sender.id] ?? sender.id,
+        id: sender.id
       };
     });
 
@@ -214,8 +214,8 @@ LIMIT 1;`)) as UnbalancedFriend[];
       const friendId = friend.id;
       const friendName = randomNamesMap[friendId] || friendId;
 
-      topFriendz[friendName] = {
-        id: friendName,
+      topFriendz[friendId] = {
+        id: friendId,
         message_count: friend.message_count,
         top_word_count:
           topWordsPerFriend.find((f) => f.id === friendId)?.wordCount || [],
