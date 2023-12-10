@@ -1,5 +1,13 @@
+export const tokenizeText = (text: string): string[] =>
+  text
+    .replaceAll(/[^a-zA-Z\s]/g, '')
+    .split(/\s/)
+    .filter((word) => !!word && !stopWords.includes(word));
+
 export const stopWords = [
   'i',
+  'im',
+  'yeah',
   'me',
   'my',
   'myself',
@@ -56,6 +64,7 @@ export const stopWords = [
   'an',
   'the',
   'and',
+  'also',
   'but',
   'if',
   'or',
