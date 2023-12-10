@@ -1,7 +1,7 @@
+import initSqlJs, { Database } from 'sql.js';
 import { stopWords } from './consts';
-import { InMemoryDB } from './InMemoryDB';
 import * as emoji from 'emoji-regex';
-import sw from 'stopword';
+import * as sw from 'stopword';
 
 export type TextsSentSummary = {
   total_texts_sent: number;
@@ -13,8 +13,6 @@ export type TopSender = {
   id: string;
   messages_sent: number;
 };
-
-export type MessagesPerDay = Record<DayOfWeek, number>;
 
 export type MonthOfYear =
   | 'January'
@@ -35,10 +33,9 @@ export type TopMonths = Record<MonthOfYear, number>;
 export type TopFriends = Record<string, TopFriend>;
 
 export type TopFriend = {
-  id: string;
   message_count: number;
-  top_word_count: WordCount[];
-  top_emojis: Emoji[];
+  top_word_count: WordCount;
+  top_emojis: WordCount;
 };
 
 export type TopWordsPerFriend = {
@@ -46,19 +43,10 @@ export type TopWordsPerFriend = {
   wordCount: WordCount[];
 };
 
+export type WordCount = Record<string, number>;
+
 export type Message = {
-  handle_id: number;
   text: string;
-};
-
-export type Emoji = {
-  emoji: string;
-  count: number;
-};
-
-export type WordCount = {
-  word: string;
-  count: number;
 };
 
 export type UnbalancedFriend = {
@@ -79,16 +67,51 @@ export type ResultJawn = {
 export class QueryManager {
   map: Record<string, string> = {};
 
-  constructor(private db: InMemoryDB) {}
+  constructor(private db: Database) {}
 
-  static async runQueries(chatFile: File, contactFile?: File) {
-    const db = await InMemoryDB.create(chatFile);
-    const queryManager = new QueryManager(db);
-    return queryManager.runQueries();
+  static async create(chatFile: File): Promise<QueryManager> {
+    const db = await QueryManager.loadDB(chatFile);
+    return new QueryManager(db);
   }
 
-  async runQueries(): Promise<ResultJawn> {
-    const textSentSummary = (await this.db.query(
+  private static async loadDB(file: File) {
+    return new Promise<Database>(async (resolve, reject) => {
+      const SQL = await initSqlJs({
+        locateFile: (file) => `https://sql.js.org/dist/${file}`,
+      });
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (reader.result === null || typeof reader.result === 'string') {
+          return reject('unable to parse file');
+        }
+        const Uints = new Uint8Array(reader.result);
+        return resolve(new SQL.Database(Uints));
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  private query(sql: string) {
+    const stmt = this.db.prepare(sql);
+    const results: unknown[] = [];
+    while (stmt.step()) results.push(stmt.getAsObject());
+    return results;
+  }
+
+  close() {
+    this.db.close();
+  }
+
+  static async runQueries(chatFile: File, contactFile?: File) {
+    const queryManager = await QueryManager.create(chatFile);
+    const results = queryManager.runQueries();
+    queryManager.db.close();
+    return results;
+  }
+
+  textSentSummary() {
+    return this.query(
       `SELECT 
         COUNT(*) as total_texts_sent,
         MIN(datetime(date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) as first_text_date,
@@ -96,9 +119,11 @@ export class QueryManager {
       FROM message m
       WHERE is_from_me = 1
       AND strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'`,
-    )) as TextsSentSummary[];
+    ) as TextsSentSummary[];
+  }
 
-    const topSenders = (await this.db.query(
+  topSenders() {
+    return this.query(
       `SELECT 
       h.id, 
       COUNT(*) as messages_sent
@@ -109,9 +134,11 @@ export class QueryManager {
   GROUP BY h.id
   ORDER BY messages_sent DESC
   LIMIT 10;`,
-    )) as TopSender[];
+    ) as TopSender[];
+  }
 
-    const messagesPerMonthResult = (await this.db.query(
+  topMonths() {
+    const messagesPerMonthResult = this.query(
       `SELECT 
         CASE strftime('%m', datetime((m.date / 1000000000) + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime'))
           WHEN '01' THEN 'January'
@@ -133,17 +160,18 @@ export class QueryManager {
         AND strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'
       GROUP BY month_of_year
       ORDER BY messages_sent DESC;`,
-    )) as { month_of_year: MonthOfYear; messages_sent: number }[];
+    ) as { month_of_year: MonthOfYear; messages_sent: number }[];
 
-    const topMonths: TopMonths = messagesPerMonthResult.reduce(
-      (acc, current) => {
-        acc[current.month_of_year] = current.messages_sent;
-        return acc;
-      },
-      {} as TopMonths,
-    );
+    return Object.fromEntries(
+      messagesPerMonthResult.map(({ month_of_year, messages_sent }) => [
+        month_of_year,
+        messages_sent,
+      ]),
+    ) as TopMonths;
+  }
 
-    const topFriendsRaw = (await this.db.query(`SELECT 
+  topFriends() {
+    const topFriendsRaw = this.query(`SELECT 
     h.id, 
     COUNT(*) as message_count
 FROM message m
@@ -154,27 +182,71 @@ WHERE
 GROUP BY h.id
 ORDER BY message_count DESC
 LIMIT 3;
-`)) as TopFriend[];
+`) as { id: string; message_count: number }[];
 
-    const messages = await this.fetchMessagesForTopFriends(topFriendsRaw);
-    const topWordsPerFriend = this.processMessages(messages);
-    const topEmojisPerFriend = this.getTopEmojisPerFriend(messages);
+    return Object.fromEntries(
+      topFriendsRaw.map(({ id, message_count }) => {
+        const wordCounts = this.wordCountsForId(id);
+        return [
+          id,
+          {
+            message_count,
+            top_word_count: wordCounts.wordCount,
+            top_emojis: wordCounts.emojiCount,
+          },
+        ];
+      }),
+    );
+  }
 
-    const topFriends: TopFriends = topFriendsRaw.reduce(
-      (acc: Record<string, TopFriend>, topFriend) => {
-        acc[topFriend.id] = {
-          ...topFriend,
-          top_word_count:
-            topWordsPerFriend.find((f) => f.id === topFriend.id)?.wordCount ||
-            [],
-          top_emojis: topEmojisPerFriend[topFriend.id] || [],
-        };
-        return acc;
-      },
-      {} as Record<string, TopFriend>,
+  private wordCountsForId(id: string) {
+    const stmt = this.db.prepare(`
+SELECT m.text 
+FROM message m
+JOIN handle h ON m.handle_id = h.ROWID
+WHERE h.id = '${id}'
+AND text NOTNULL;
+    `);
+
+    const rawWordCount: WordCount = {};
+    const rawEmojiCount: WordCount = {};
+
+    const emojiRegex = emoji.default();
+    while (stmt.step()) {
+      const msg = stmt.getAsObject() as Message;
+      if (!msg.text) continue;
+      sw.removeStopwords(msg.text.toLowerCase().split(/\s+/), stopWords)
+        .filter((word) => !!word)
+        .forEach((word) => {
+          rawWordCount[word] = (rawWordCount[word] || 0) + 1;
+        });
+
+      for (const match of msg.text.matchAll(emojiRegex)) {
+        const emoji = match[0];
+        rawEmojiCount[emoji] = (rawEmojiCount[emoji] || 0) + 1;
+      }
+    }
+
+    const wordCount = Object.fromEntries(
+      Object.entries(rawWordCount)
+        .sort(([_a, countA], [_b, countB]) => countB - countA)
+        .slice(0, 5), // Take the top 5 words
     );
 
-    const unbalancedFriend = (await this.db.query(`SELECT 
+    const emojiCount = Object.fromEntries(
+      Object.entries(rawEmojiCount)
+        .sort(([_a, countA], [_b, countB]) => countB - countA)
+        .slice(0, 5), // Take the top 5 emojis
+    );
+
+    return {
+      wordCount,
+      emojiCount,
+    };
+  }
+
+  unbalancedFriend() {
+    return this.query(`SELECT 
     h.id, 
     SUM(CASE WHEN m.is_from_me = 1 THEN 1 ELSE 0 END) as sent,
     SUM(CASE WHEN m.is_from_me = 0 THEN 1 ELSE 0 END) as received,
@@ -188,98 +260,17 @@ JOIN handle h ON m.handle_id = h.ROWID
 GROUP BY h.id
 HAVING (SUM(CASE WHEN m.is_from_me = 1 THEN 1 ELSE 0 END) > 50)
 ORDER BY imbalance ASC, (sent + received) DESC
-LIMIT 1;`)) as UnbalancedFriend[];
+LIMIT 1;`)[0] as UnbalancedFriend;
+  }
 
-    const randomNamesMap = this.createIdToNameMap([
-      ...topSenders.map((sender) => sender.id),
-      ...topFriendsRaw.map((friend) => friend.id),
-      unbalancedFriend[0].id,
-    ]);
-
-    const topSenderz: TopSender[] = topSenders.map((sender) => {
-      return {
-        ...sender,
-        id: sender.id,
-      };
-    });
-
-    const topFriendz: TopFriends = {};
-    topFriendsRaw.forEach((friend) => {
-      const friendId = friend.id;
-      const friendName = randomNamesMap[friendId] || friendId;
-
-      topFriendz[friendId] = {
-        id: friendId,
-        message_count: friend.message_count,
-        top_word_count:
-          topWordsPerFriend.find((f) => f.id === friendId)?.wordCount || [],
-        top_emojis: topEmojisPerFriend[friendId] || [],
-      };
-    });
-
-    unbalancedFriend[0].id =
-      randomNamesMap[unbalancedFriend[0].id] ?? unbalancedFriend[0].id;
+  async runQueries(): Promise<ResultJawn> {
     return {
-      textSentSummary: textSentSummary[0],
-      topSenders: topSenderz,
-      topMonths,
-      topFriends: topFriendz,
-      unbalancedFriend: unbalancedFriend[0],
+      textSentSummary: this.textSentSummary()[0],
+      topSenders: this.topSenders(),
+      topMonths: this.topMonths(),
+      topFriends: this.topFriends(),
+      unbalancedFriend: this.unbalancedFriend(),
     };
-  }
-
-  private async fetchMessagesForTopFriends(
-    topFriends: TopFriend[],
-  ): Promise<Message[]> {
-    let messages: Message[] = [];
-    for (const friend of topFriends) {
-      const friendMessages = (await this.db.query(`
-            SELECT h.id as handle_id, m.text 
-            FROM message m
-            JOIN handle h ON m.handle_id = h.ROWID
-            WHERE h.id = '${friend.id}'
-            AND text NOTNULL;
-        `)) as Message[];
-
-      messages = messages.concat(friendMessages);
-    }
-    return messages.filter(
-      (messages) => messages.text != null && messages.text != '',
-    );
-  }
-
-  private processMessages(messages: Message[]): TopWordsPerFriend[] {
-    const wordCounts: Record<string, Record<string, number>> = {};
-
-    messages.forEach((message, index) => {
-      if (message.text) {
-        const words = sw.removeStopwords(
-          message.text.toLowerCase().split(/\s+/),
-          stopWords,
-        );
-        const handleIdKey = message.handle_id;
-
-        words.forEach((word: any) => {
-          if (word.trim() !== '') {
-            wordCounts[handleIdKey] = wordCounts[handleIdKey] || {};
-            wordCounts[handleIdKey][word] =
-              (wordCounts[handleIdKey][word] || 0) + 1;
-          }
-        });
-      }
-    });
-
-    const topWordsPerFriend: TopWordsPerFriend[] = [];
-    for (const handleIdKey of Object.keys(wordCounts)) {
-      const sortedWords = Object.entries(wordCounts[handleIdKey])
-        .map(([word, count]) => ({ word, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
-
-      topWordsPerFriend.push({ id: handleIdKey, wordCount: sortedWords });
-    }
-
-    return topWordsPerFriend;
   }
 
   generateRandomName() {
@@ -399,39 +390,5 @@ LIMIT 1;`)) as UnbalancedFriend[];
       this.map[id] = this.generateRandomName();
     });
     return this.map;
-  }
-
-  getTopEmojisPerFriend(messages: Message[]): Record<string, Emoji[]> {
-    const emojiCountsPerFriend: Record<string, Record<string, number>> = {};
-    const regex = emoji.default();
-
-    for (const message of messages) {
-      const text = message.text || '';
-      for (const match of text.matchAll(regex)) {
-        const emoji = match[0];
-        const friendId = message.handle_id.toString();
-
-        if (!emojiCountsPerFriend[friendId]) {
-          emojiCountsPerFriend[friendId] = {};
-        }
-
-        emojiCountsPerFriend[friendId][emoji] =
-          (emojiCountsPerFriend[friendId][emoji] || 0) + 1;
-      }
-    }
-
-    const topEmojisPerFriend: Record<string, Emoji[]> = {};
-    for (const friendId in emojiCountsPerFriend) {
-      if (emojiCountsPerFriend.hasOwnProperty(friendId)) {
-        topEmojisPerFriend[friendId] = Object.entries(
-          emojiCountsPerFriend[friendId],
-        )
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 5) // Take the top 5 emojis
-          .map(([emoji, count]) => ({ emoji, count }));
-      }
-    }
-
-    return topEmojisPerFriend;
   }
 }
