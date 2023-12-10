@@ -4,7 +4,7 @@ import './globals.css';
 import { DataContext } from '@/contexts/DataContext';
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { ResultJawn } from '@/db/QueryManager';
+import { ResultJawn } from '@/db/types';
 
 const inter = Inter({ subsets: ['latin'] });
 
