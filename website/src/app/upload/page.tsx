@@ -4,18 +4,16 @@ import { ReactNode, useCallback, useState } from 'react';
 import { FileInput } from './FileInput';
 import clsx from 'clsx';
 import { useData } from '@/contexts/DataContext';
-import axios from 'axios';
+
 import { useRouter } from 'next/navigation';
 import { BeatLoader } from 'react-spinners';
+import { QueryManager } from '@/db/QueryManager';
 
 const steps = [
   'download your phone data to your laptop',
   'export a file containing your chats',
   'export a file with your contact data',
 ];
-
-const API_ENDPOINT =
-  process.env.NEXT_PUBLIC_API_ENDPOINT || 'http://localhost:8000';
 
 export default function GettingStarted() {
   const [chatFile, setChatFile] = useState<File>();
@@ -92,23 +90,8 @@ const useSubmitFiles = (setIsSending: (val: boolean) => void) => {
     async (chatFile: File, contactFile?: File) => {
       setIsSending(true);
       try {
-        const formData = new FormData();
-        formData.append('chatdb', chatFile);
-        if (contactFile) {
-          formData.append('contactdb', contactFile);
-        }
-
-        const response = await axios({
-          method: 'POST',
-          url: API_ENDPOINT + '/upload',
-          data: formData,
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-
-        console.log(response.data);
-        setData(response.data);
+        const results = await QueryManager.runQueries(chatFile, contactFile);
+        setData(results);
         router.push('/results');
       } catch (err) {
         console.error('an error occurred while fetching your results:', err);

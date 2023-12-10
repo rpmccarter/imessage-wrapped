@@ -1,13 +1,13 @@
-import vCard from "vcf";
-import * as fs from "fs";
+import vCard from 'vcf';
+import * as fs from 'fs';
 
 function cleanThatShit(number: string) {
   return number
-    .replace("+", "")
-    .replace(" ", "")
-    .replace("(", "")
-    .replace(")", "")
-    .replace("-", "");
+    .replace('+', '')
+    .replace(' ', '')
+    .replace('(', '')
+    .replace(')', '')
+    .replace('-', '');
 }
 
 function extractPhoneNumbers(strings: string[]): string[] {
@@ -26,18 +26,18 @@ function extractPhoneNumbers(strings: string[]): string[] {
 }
 
 export function parseVcard(filePath: string): Record<string, string> {
-  const fileContents = fs.readFileSync(filePath, "utf8");
+  const fileContents = fs.readFileSync(filePath, 'utf8');
   var vCardData = vCard.parse(fileContents);
   console.log(vCardData);
   const numToName: Record<string, string> = {};
   for (const card of vCardData) {
     // console.log(card.toJSON());
     // const tel = card.get('tel').valueOf();
-    const name = card.get("fn").valueOf();
-    if (!card.get("tel")) {
+    const name = card.get('fn').valueOf();
+    if (!card.get('tel')) {
       continue;
     }
-    const tel = JSON.stringify(card.get("tel")).split(",");
+    const tel = JSON.stringify(card.get('tel')).split(',');
     const phone_number = extractPhoneNumbers(tel);
 
     for (let i = 0; i < phone_number.length; i++) {

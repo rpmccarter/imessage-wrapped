@@ -1,7 +1,7 @@
-import { stopWords } from "./consts";
-import { InMemoryDB } from "./dbWrapper";
-import * as emoji from "emoji-regex";
-import * as sw from "stopword";
+import { stopWords } from './consts';
+import { InMemoryDB } from './InMemoryDB';
+import * as emoji from 'emoji-regex';
+import sw from 'stopword';
 
 export type TextsSentSummary = {
   total_texts_sent: number;
@@ -14,30 +14,21 @@ export type TopSender = {
   messages_sent: number;
 };
 
-export type DayOfWeek =
-  | "Monday"
-  | "Sunday"
-  | "Tuesday"
-  | "Wednesday"
-  | "Thursday"
-  | "Friday"
-  | "Saturday";
-
 export type MessagesPerDay = Record<DayOfWeek, number>;
 
 export type MonthOfYear =
-  | "January"
-  | "February"
-  | "March"
-  | "April"
-  | "May"
-  | "June"
-  | "July"
-  | "August"
-  | "September"
-  | "October"
-  | "November"
-  | "December";
+  | 'January'
+  | 'February'
+  | 'March'
+  | 'April'
+  | 'May'
+  | 'June'
+  | 'July'
+  | 'August'
+  | 'September'
+  | 'October'
+  | 'November'
+  | 'December';
 
 export type TopMonths = Record<MonthOfYear, number>;
 
@@ -86,14 +77,17 @@ export type ResultJawn = {
 };
 
 export class QueryManager {
-  private db: InMemoryDB;
   map: Record<string, string> = {};
 
-  constructor(db: InMemoryDB) {
-    this.db = db;
+  constructor(private db: InMemoryDB) {}
+
+  static async runQueries(chatFile: File, contactFile?: File) {
+    const db = await InMemoryDB.create(chatFile);
+    const queryManager = new QueryManager(db);
+    return queryManager.runQueries();
   }
 
-  async runQueries(contacts: Record<string, string>): Promise<ResultJawn> {
+  async runQueries(): Promise<ResultJawn> {
     const textSentSummary = (await this.db.query(
       `SELECT 
         COUNT(*) as total_texts_sent,
@@ -101,7 +95,7 @@ export class QueryManager {
         MAX(datetime(date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) as last_text_date
       FROM message m
       WHERE is_from_me = 1
-      AND strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'`
+      AND strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'`,
     )) as TextsSentSummary[];
 
     const topSenders = (await this.db.query(
@@ -114,7 +108,7 @@ export class QueryManager {
   AND strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'
   GROUP BY h.id
   ORDER BY messages_sent DESC
-  LIMIT 10;`
+  LIMIT 10;`,
     )) as TopSender[];
 
     const messagesPerMonthResult = (await this.db.query(
@@ -138,7 +132,7 @@ export class QueryManager {
         WHERE m.is_from_me = 1
         AND strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'
       GROUP BY month_of_year
-      ORDER BY messages_sent DESC;`
+      ORDER BY messages_sent DESC;`,
     )) as { month_of_year: MonthOfYear; messages_sent: number }[];
 
     const topMonths: TopMonths = messagesPerMonthResult.reduce(
@@ -146,7 +140,7 @@ export class QueryManager {
         acc[current.month_of_year] = current.messages_sent;
         return acc;
       },
-      {} as TopMonths
+      {} as TopMonths,
     );
 
     const topFriendsRaw = (await this.db.query(`SELECT 
@@ -177,7 +171,7 @@ LIMIT 3;
         };
         return acc;
       },
-      {} as Record<string, TopFriend>
+      {} as Record<string, TopFriend>,
     );
 
     const unbalancedFriend = (await this.db.query(`SELECT 
@@ -205,7 +199,7 @@ LIMIT 1;`)) as UnbalancedFriend[];
     const topSenderz: TopSender[] = topSenders.map((sender) => {
       return {
         ...sender,
-        id: sender.id
+        id: sender.id,
       };
     });
 
@@ -235,7 +229,7 @@ LIMIT 1;`)) as UnbalancedFriend[];
   }
 
   private async fetchMessagesForTopFriends(
-    topFriends: TopFriend[]
+    topFriends: TopFriend[],
   ): Promise<Message[]> {
     let messages: Message[] = [];
     for (const friend of topFriends) {
@@ -250,7 +244,7 @@ LIMIT 1;`)) as UnbalancedFriend[];
       messages = messages.concat(friendMessages);
     }
     return messages.filter(
-      (messages) => messages.text != null && messages.text != ""
+      (messages) => messages.text != null && messages.text != '',
     );
   }
 
@@ -261,12 +255,12 @@ LIMIT 1;`)) as UnbalancedFriend[];
       if (message.text) {
         const words = sw.removeStopwords(
           message.text.toLowerCase().split(/\s+/),
-          stopWords
+          stopWords,
         );
         const handleIdKey = message.handle_id;
 
         words.forEach((word: any) => {
-          if (word.trim() !== "") {
+          if (word.trim() !== '') {
             wordCounts[handleIdKey] = wordCounts[handleIdKey] || {};
             wordCounts[handleIdKey][word] =
               (wordCounts[handleIdKey][word] || 0) + 1;
@@ -290,110 +284,110 @@ LIMIT 1;`)) as UnbalancedFriend[];
 
   generateRandomName() {
     const names = [
-      "Alice",
-      "Bob",
-      "Charlie",
-      "David",
-      "Eva",
-      "Fiona",
-      "George",
-      "Hannah",
-      "Ian",
-      "Julia",
-      "Kyle",
-      "Laura",
-      "Mike",
-      "Nina",
-      "Oscar",
-      "Paula",
-      "Quincy",
-      "Rachel",
-      "Steve",
-      "Tina",
-      "Uma",
-      "Victor",
-      "Wendy",
-      "Xander",
-      "Yvonne",
-      "Zach",
-      "Amelia",
-      "Brad",
-      "Catherine",
-      "Derek",
-      "Elaine",
-      "Frank",
-      "Grace",
-      "Henry",
-      "Isabella",
-      "Jack",
-      "Katie",
-      "Liam",
-      "Megan",
-      "Nathan",
-      "Olivia",
-      "Peter",
-      "Quinn",
-      "Ruby",
-      "Samuel",
-      "Tracy",
-      "Ulysses",
-      "Vanessa",
-      "William",
-      "Xenia",
-      "Yara",
-      "Zane",
-      "Ava",
-      "Benjamin",
-      "Chloe",
-      "Dylan",
-      "Emma",
-      "Freddie",
-      "Gina",
-      "Harvey",
-      "Ivy",
-      "Jason",
-      "Kelsey",
-      "Leon",
-      "Mia",
-      "Noah",
-      "Ophelia",
-      "Patrick",
-      "Queen",
-      "Ronald",
-      "Sylvia",
-      "Timothy",
-      "Ursula",
-      "Violet",
-      "Winston",
-      "Xavier",
-      "Yasmine",
-      "Zeke",
-      "Anastasia",
-      "Boris",
-      "Carmen",
-      "Dominic",
-      "Eleanor",
-      "Felix",
-      "Gemma",
-      "Howard",
-      "Iris",
-      "Jerome",
-      "Kristina",
-      "Lucas",
-      "Monica",
-      "Nigel",
-      "Octavia",
-      "Penelope",
-      "Quentin",
-      "Rosalind",
-      "Sebastian",
-      "Tabitha",
-      "Uriel",
-      "Veronica",
-      "Wayne",
-      "Ximena",
-      "Yolanda",
-      "Zephyr",
+      'Alice',
+      'Bob',
+      'Charlie',
+      'David',
+      'Eva',
+      'Fiona',
+      'George',
+      'Hannah',
+      'Ian',
+      'Julia',
+      'Kyle',
+      'Laura',
+      'Mike',
+      'Nina',
+      'Oscar',
+      'Paula',
+      'Quincy',
+      'Rachel',
+      'Steve',
+      'Tina',
+      'Uma',
+      'Victor',
+      'Wendy',
+      'Xander',
+      'Yvonne',
+      'Zach',
+      'Amelia',
+      'Brad',
+      'Catherine',
+      'Derek',
+      'Elaine',
+      'Frank',
+      'Grace',
+      'Henry',
+      'Isabella',
+      'Jack',
+      'Katie',
+      'Liam',
+      'Megan',
+      'Nathan',
+      'Olivia',
+      'Peter',
+      'Quinn',
+      'Ruby',
+      'Samuel',
+      'Tracy',
+      'Ulysses',
+      'Vanessa',
+      'William',
+      'Xenia',
+      'Yara',
+      'Zane',
+      'Ava',
+      'Benjamin',
+      'Chloe',
+      'Dylan',
+      'Emma',
+      'Freddie',
+      'Gina',
+      'Harvey',
+      'Ivy',
+      'Jason',
+      'Kelsey',
+      'Leon',
+      'Mia',
+      'Noah',
+      'Ophelia',
+      'Patrick',
+      'Queen',
+      'Ronald',
+      'Sylvia',
+      'Timothy',
+      'Ursula',
+      'Violet',
+      'Winston',
+      'Xavier',
+      'Yasmine',
+      'Zeke',
+      'Anastasia',
+      'Boris',
+      'Carmen',
+      'Dominic',
+      'Eleanor',
+      'Felix',
+      'Gemma',
+      'Howard',
+      'Iris',
+      'Jerome',
+      'Kristina',
+      'Lucas',
+      'Monica',
+      'Nigel',
+      'Octavia',
+      'Penelope',
+      'Quentin',
+      'Rosalind',
+      'Sebastian',
+      'Tabitha',
+      'Uriel',
+      'Veronica',
+      'Wayne',
+      'Ximena',
+      'Yolanda',
+      'Zephyr',
     ];
 
     return names[Math.floor(Math.random() * names.length)];
@@ -412,7 +406,7 @@ LIMIT 1;`)) as UnbalancedFriend[];
     const regex = emoji.default();
 
     for (const message of messages) {
-      const text = message.text || "";
+      const text = message.text || '';
       for (const match of text.matchAll(regex)) {
         const emoji = match[0];
         const friendId = message.handle_id.toString();
@@ -430,7 +424,7 @@ LIMIT 1;`)) as UnbalancedFriend[];
     for (const friendId in emojiCountsPerFriend) {
       if (emojiCountsPerFriend.hasOwnProperty(friendId)) {
         topEmojisPerFriend[friendId] = Object.entries(
-          emojiCountsPerFriend[friendId]
+          emojiCountsPerFriend[friendId],
         )
           .sort((a, b) => b[1] - a[1])
           .slice(0, 5) // Take the top 5 emojis
