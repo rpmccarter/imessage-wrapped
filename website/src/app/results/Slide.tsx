@@ -4,7 +4,7 @@ import {
   TopFriends,
   TopMonths,
   TopSender,
-} from '@/contexts/DataContext';
+} from '@/db/QueryManager';
 import { BarElement, CategoryScale, Chart, LinearScale } from 'chart.js';
 import { ReactNode, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
@@ -222,7 +222,7 @@ export const FriendSummarySlide = ({
         Your top words were:
       </h1>
       <div className="flex flex-col gap-1">
-        {data.top_word_count.map(({ word }, i) => {
+        {Object.entries(data.top_word_count).map(([word], i) => {
           return (
             <div key={i} className="flex gap-2">
               <div className="text-2xl leading-none">{i + 1}.</div>
@@ -236,7 +236,7 @@ export const FriendSummarySlide = ({
         Your top emojis were:
       </h1>
       <div className="flex flex-col gap-2">
-        {data.top_emojis.map(({ emoji }, i) => {
+        {Object.entries(data.top_emojis).map(([emoji], i) => {
           return (
             <div key={i} className="flex gap-2">
               <div className="text-2xl">{i + 1}.</div>

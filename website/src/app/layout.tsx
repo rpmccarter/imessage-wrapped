@@ -1,9 +1,10 @@
 'use client';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { DataContext, ResultJawn } from '@/contexts/DataContext';
+import { DataContext } from '@/contexts/DataContext';
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { ResultJawn } from '@/db/QueryManager';
 
 const inter = Inter({ subsets: ['latin'] });
 
