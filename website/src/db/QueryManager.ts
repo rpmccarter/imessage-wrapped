@@ -1,7 +1,6 @@
 import initSqlJs, { Database } from 'sql.js';
-import { stopWords } from './consts';
 import * as emoji from 'emoji-regex';
-import * as sw from 'stopword';
+import { tokenizeText } from './tokenizeText';
 
 export type TextsSentSummary = {
   total_texts_sent: number;
@@ -215,11 +214,9 @@ AND text NOTNULL;
     while (stmt.step()) {
       const msg = stmt.getAsObject() as Message;
       if (!msg.text) continue;
-      sw.removeStopwords(msg.text.toLowerCase().split(/\s+/), stopWords)
-        .filter((word) => !!word)
-        .forEach((word) => {
-          rawWordCount[word] = (rawWordCount[word] || 0) + 1;
-        });
+      tokenizeText(msg.text).forEach((word) => {
+        rawWordCount[word] = (rawWordCount[word] || 0) + 1;
+      });
 
       for (const match of msg.text.matchAll(emojiRegex)) {
         const emoji = match[0];
@@ -271,124 +268,5 @@ LIMIT 1;`)[0] as UnbalancedFriend;
       topFriends: this.topFriends(),
       unbalancedFriend: this.unbalancedFriend(),
     };
-  }
-
-  generateRandomName() {
-    const names = [
-      'Alice',
-      'Bob',
-      'Charlie',
-      'David',
-      'Eva',
-      'Fiona',
-      'George',
-      'Hannah',
-      'Ian',
-      'Julia',
-      'Kyle',
-      'Laura',
-      'Mike',
-      'Nina',
-      'Oscar',
-      'Paula',
-      'Quincy',
-      'Rachel',
-      'Steve',
-      'Tina',
-      'Uma',
-      'Victor',
-      'Wendy',
-      'Xander',
-      'Yvonne',
-      'Zach',
-      'Amelia',
-      'Brad',
-      'Catherine',
-      'Derek',
-      'Elaine',
-      'Frank',
-      'Grace',
-      'Henry',
-      'Isabella',
-      'Jack',
-      'Katie',
-      'Liam',
-      'Megan',
-      'Nathan',
-      'Olivia',
-      'Peter',
-      'Quinn',
-      'Ruby',
-      'Samuel',
-      'Tracy',
-      'Ulysses',
-      'Vanessa',
-      'William',
-      'Xenia',
-      'Yara',
-      'Zane',
-      'Ava',
-      'Benjamin',
-      'Chloe',
-      'Dylan',
-      'Emma',
-      'Freddie',
-      'Gina',
-      'Harvey',
-      'Ivy',
-      'Jason',
-      'Kelsey',
-      'Leon',
-      'Mia',
-      'Noah',
-      'Ophelia',
-      'Patrick',
-      'Queen',
-      'Ronald',
-      'Sylvia',
-      'Timothy',
-      'Ursula',
-      'Violet',
-      'Winston',
-      'Xavier',
-      'Yasmine',
-      'Zeke',
-      'Anastasia',
-      'Boris',
-      'Carmen',
-      'Dominic',
-      'Eleanor',
-      'Felix',
-      'Gemma',
-      'Howard',
-      'Iris',
-      'Jerome',
-      'Kristina',
-      'Lucas',
-      'Monica',
-      'Nigel',
-      'Octavia',
-      'Penelope',
-      'Quentin',
-      'Rosalind',
-      'Sebastian',
-      'Tabitha',
-      'Uriel',
-      'Veronica',
-      'Wayne',
-      'Ximena',
-      'Yolanda',
-      'Zephyr',
-    ];
-
-    return names[Math.floor(Math.random() * names.length)];
-  }
-
-  // Function to create a mapping from id to random name
-  createIdToNameMap(ids: any) {
-    ids.forEach((id: any) => {
-      this.map[id] = this.generateRandomName();
-    });
-    return this.map;
   }
 }
