@@ -1,10 +1,20 @@
 export const tokenizeText = (text: string): string[] =>
   text
     .replaceAll(/[^a-zA-Z\s]/g, '')
+    .toLowerCase()
     .split(/\s/)
     .filter((word) => !!word && !stopWords.includes(word));
 
 export const stopWords = [
+  'loved',
+  'laughed',
+  'liked',
+  'like',
+  'u',
+  'dont',
+  'thats',
+  'good',
+  'emphasized',
   'i',
   'im',
   'yeah',
