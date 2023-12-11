@@ -10,15 +10,35 @@ import {
   UnbalancedFriend,
   ResultJawn,
 } from './types';
+import { normalizeId, parseContacts } from './parseContacts';
 
 export class QueryManager {
-  map: Record<string, string> = {};
-
   constructor(private db: Database) {}
 
-  static async create(chatFile: File): Promise<QueryManager> {
+  static async create(
+    chatFile: File,
+    contactFile?: File,
+  ): Promise<QueryManager> {
     const db = await QueryManager.loadDB(chatFile);
-    return new QueryManager(db);
+    const qm = new QueryManager(db);
+    await qm.addContactData(contactFile);
+
+    return qm;
+  }
+
+  async addContactData(file?: File) {
+    const contacts = file ? await parseContacts(file) : {};
+    this.db.run('ALTER TABLE handle ADD display_name varchar(255);');
+
+    const displayNameFromId = (id: string): string => {
+      const normalId = normalizeId(id);
+      return contacts[normalId] ?? id;
+    };
+    this.db.create_function('display_name_from_id', displayNameFromId);
+    this.db.run(`
+UPDATE handle
+SET display_name = display_name_from_id(id);
+    `);
   }
 
   private static async loadDB(file: File) {
@@ -51,7 +71,7 @@ export class QueryManager {
   }
 
   static async runQueries(chatFile: File, contactFile?: File) {
-    const queryManager = await QueryManager.create(chatFile);
+    const queryManager = await QueryManager.create(chatFile, contactFile);
     const results = queryManager.runQueries();
     queryManager.db.close();
     return results;
@@ -72,13 +92,13 @@ export class QueryManager {
   topSenders() {
     return this.query(
       `SELECT 
-      h.id, 
+      h.display_name AS id, 
       COUNT(*) as messages_sent
   FROM message m
   JOIN handle h ON m.handle_id = h.ROWID
   WHERE m.is_from_me = 1
   AND strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'
-  GROUP BY h.id
+  GROUP BY h.display_name
   ORDER BY messages_sent DESC
   LIMIT 10;`,
     ) as TopSender[];
@@ -119,14 +139,14 @@ export class QueryManager {
 
   topFriends() {
     const topFriendsRaw = this.query(`SELECT 
-    h.id, 
+    display_name AS id,
     COUNT(*) as message_count
 FROM message m
 JOIN handle h ON m.handle_id = h.ROWID
 WHERE 
     strftime('%Y', datetime(m.date / 1000000000 + strftime('%s', '2001-01-01'), 'unixepoch', 'localtime')) = '2023'
     AND m.is_from_me = 1
-GROUP BY h.id
+GROUP BY h.display_name
 ORDER BY message_count DESC
 LIMIT 3;
 `) as { id: string; message_count: number }[];
@@ -151,7 +171,7 @@ LIMIT 3;
 SELECT m.text 
 FROM message m
 JOIN handle h ON m.handle_id = h.ROWID
-WHERE h.id = '${id}'
+WHERE h.display_name = '${id}'
 AND text NOTNULL;
     `);
 
@@ -192,7 +212,7 @@ AND text NOTNULL;
 
   unbalancedFriend() {
     return this.query(`SELECT 
-    h.id, 
+    h.display_name as id, 
     SUM(CASE WHEN m.is_from_me = 1 THEN 1 ELSE 0 END) as sent,
     SUM(CASE WHEN m.is_from_me = 0 THEN 1 ELSE 0 END) as received,
     ABS(SUM(CASE WHEN m.is_from_me = 1 THEN 1 ELSE 0 END) - SUM(CASE WHEN m.is_from_me = 0 THEN 1 ELSE 0 END)) as imbalance,
@@ -202,7 +222,7 @@ AND text NOTNULL;
     END as ratio
 FROM message m
 JOIN handle h ON m.handle_id = h.ROWID
-GROUP BY h.id
+GROUP BY h.display_name
 HAVING (SUM(CASE WHEN m.is_from_me = 1 THEN 1 ELSE 0 END) > 50)
 ORDER BY imbalance ASC, (sent + received) DESC
 LIMIT 1;`)[0] as UnbalancedFriend;
