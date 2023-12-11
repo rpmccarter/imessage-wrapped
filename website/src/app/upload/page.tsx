@@ -11,7 +11,7 @@ import { QueryManager } from '@/db/QueryManager';
 
 const dbSteps = [
   'Copy the following text: ~/Library/Messages/',
-  'Hit “command + space” to open the Spotlight search.',
+  'Hit “command + space” to open the Spotlight search',
   'Paste the text into the search bar, then open the "Messages" folder (search result)',
   'Locate the chat.db file, and drag it into the upload box to the right',
 ];
@@ -72,7 +72,7 @@ export default function GettingStarted() {
         </div>
 
         <div className="flex flex-col w-1/3">
-          {!chatFile || !contactFile ? (
+          {/*!chatFile || !contactFile ? (
             <div
               style={{
                 aspectRatio: '1 / 1',
@@ -86,7 +86,7 @@ export default function GettingStarted() {
             >
               (gif goes here)
             </div>
-          ) : null}
+              ) : null*/}
 
           {!chatFile ? (
             <FileInput
