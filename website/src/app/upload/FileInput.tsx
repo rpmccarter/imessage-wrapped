@@ -6,7 +6,7 @@ import { useRef } from 'react';
 type FileInputParams = {
   title?: string;
   value?: File;
-  accept?: string;
+  accept?: string[];
   setValue?: (file: File) => void;
 };
 
@@ -24,6 +24,22 @@ export const FileInput = ({
         aria-label="file upload button"
         className="m-2 w-full h-full p-4 flex border-gray-400 dark:border-white/30 items-center justify-center border rounded-xl border-dashed bg-transparent outline-none min-w-0"
         onClick={() => hiddenInputRef.current?.click()}
+        onDrop={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const firstFile = event.dataTransfer.files[0];
+          if (
+            !firstFile ||
+            (accept && !accept.some((ext) => firstFile.name.endsWith(ext)))
+          ) {
+            return;
+          }
+          setValue?.(firstFile);
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
       >
         <div
           className={clsx(
@@ -40,7 +56,7 @@ export const FileInput = ({
       {/* HACK: file inputs are notoriously hard to style, so hide the native input and click it programmatically */}
       <input
         type="file"
-        accept={accept}
+        accept={accept?.join(',')}
         onChange={(event) =>
           event.target.files?.[0] && setValue?.(event.target.files[0])
         }
