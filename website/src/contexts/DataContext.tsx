@@ -1,4 +1,4 @@
-import { ResultJawn } from '@/db/QueryManager';
+import { ResultJawn } from '@/db/types';
 import { createContext, useContext } from 'react';
 
 type DataContextType = {

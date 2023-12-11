@@ -75,7 +75,6 @@ export default function GettingStarted() {
             </div>
           ) : null}
         </div>
-
         <div className="flex flex-col w-1/3">
           {/*!chatFile || !contactFile ? (
             <div
@@ -94,9 +93,9 @@ export default function GettingStarted() {
               ) : null*/}
 
           {!chatFile ? (
-            <FileInput
+             <FileInput
               title="chat.db file"
-              accept=".db,.gz"
+              accept={['.db']}
               value={chatFile}
               setValue={setChatFile}
             />
@@ -116,7 +115,7 @@ export default function GettingStarted() {
           {chatFile && !contactFile ? (
             <FileInput
               title="contacts file"
-              accept=".vcf"
+              accept={['.vcf', '.vcard']}
               value={contactFile}
               setValue={setContactFile}
             />

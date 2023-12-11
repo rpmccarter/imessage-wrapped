@@ -4,7 +4,7 @@ import {
   TopFriends,
   TopMonths,
   TopSender,
-} from '@/db/QueryManager';
+} from '@/db/types';
 import { BarElement, CategoryScale, Chart, LinearScale } from 'chart.js';
 import { ReactNode, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
