@@ -6,6 +6,16 @@ export const tokenizeText = (text: string): string[] =>
     .filter((word) => !!word && !stopWords.includes(word));
 
 export const stopWords = [
+  'think',
+  'one',
+  'get',
+  'yes',
+  'would',
+  'oh',
+  'youre',
+  'gonna',
+  'okay',
+  'really',
   'loved',
   'laughed',
   'liked',
