@@ -29,9 +29,14 @@ export default function GettingStarted() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-24">
-      <h1 className="text-4xl">Let's get your iMessages wrapped</h1>
+      <h1
+        className="text-4xl"
+        style={{ paddingBottom: chatFile && contactFile ? '10px' : '0px' }}
+      >
+        Let's get your iMessages wrapped
+      </h1>
 
-      <div className="flex gap-6">
+      <div className="flex gap-6 w-full">
         <div className="flex flex-col m-4 gap-6 w-2/3">
           <div className="flex flex-row gap-6">
             <h2 className="text-2xl">1. Upload your iMessages</h2>
@@ -96,17 +101,16 @@ export default function GettingStarted() {
               setValue={setChatFile}
             />
           ) : (
-            <div style={{ height: '75px' }}>
-              <div
-                className={clsx(
-                  'text-lg font-mono text-ellipsis overflow-hidden',
-                  'text-gray-400 dark:text-white/30',
-                  'flex items-center justify-center h-full',
-                )}
-              >
-                {chatFile.name ?? `Drop your file here or click to upload`}
-                &#10003;
-              </div>
+            <div
+              style={{ height: '75px' }}
+              className={clsx(
+                'text-lg font-mono text-ellipsis overflow-hidden',
+                'text-gray-400 dark:text-white/30',
+                'flex items-center justify-center h-full text-center',
+              )}
+            >
+              {chatFile.name ?? `Drop your file here or click to upload`}
+              &#10003;
             </div>
           )}
           {chatFile && !contactFile ? (
@@ -118,16 +122,16 @@ export default function GettingStarted() {
             />
           ) : null}
           {chatFile && contactFile ? (
-            <div style={{ height: '100px' }}>
-              <div
-                className={clsx(
-                  'text-lg font-mono text-ellipsis overflow-hidden',
-                  'text-gray-400 dark:text-white/30',
-                )}
-              >
-                {contactFile.name ?? `Drop your file here or click to upload`}
-                &#10003;
-              </div>
+            <div
+              style={{ height: '75px' }}
+              className={clsx(
+                'text-lg font-mono text-ellipsis overflow-hidden',
+                'text-gray-400 dark:text-white/30',
+                'flex items-center justify-center h-full text-center',
+              )}
+            >
+              {contactFile.name ?? `Drop your file here or click to upload`}
+              &#10003;
             </div>
           ) : null}
         </div>
@@ -136,7 +140,7 @@ export default function GettingStarted() {
         <SubmitButton chatFile={chatFile} contactFile={contactFile} />
       ) : null}
 
-      <h3>
+      <h3 style={{ paddingTop: chatFile && contactFile ? '30px' : '0px' }}>
         Don’t worry, we NEVER store or save your data. All of the magic is done
         on your own device, so we never even see it.
       </h3>
@@ -164,7 +168,7 @@ const SubmitButton = ({ chatFile, contactFile }: SubmitButtonProps) => {
         'border px-4 py-2 rounded-full items-center w-1/3',
         chatFile === undefined
           ? 'text-gray-600 bg-gray-600/20 border-gray-600 pointer-events-none'
-          : 'text-sky-600 bg-sky-600/20 border-sky-600',
+          : 'text-white bg-sky-600/20 border-sky-600',
       )}
     >
       {isSending ? (
