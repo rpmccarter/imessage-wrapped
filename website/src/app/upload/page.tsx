@@ -33,7 +33,7 @@ export default function GettingStarted() {
         className="text-4xl"
         style={{ paddingBottom: chatFile && contactFile ? '10px' : '0px' }}
       >
-        Let's get your iMessages wrapped
+        {"Let's get your iMessages wrapped"}
       </h1>
 
       <div className="flex gap-6 w-full">
@@ -93,7 +93,7 @@ export default function GettingStarted() {
               ) : null*/}
 
           {!chatFile ? (
-             <FileInput
+            <FileInput
               title="chat.db file"
               accept={['.db']}
               value={chatFile}
