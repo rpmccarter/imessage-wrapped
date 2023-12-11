@@ -167,13 +167,16 @@ LIMIT 3;
   }
 
   private wordCountsForId(id: string) {
-    const stmt = this.db.prepare(`
+    const stmt = this.db.prepare(
+      `
 SELECT m.text 
 FROM message m
 JOIN handle h ON m.handle_id = h.ROWID
-WHERE h.display_name = '${id}'
+WHERE h.display_name = :id
 AND text NOTNULL;
-    `);
+    `,
+      { ':id': id },
+    );
 
     const rawWordCount: WordCount = {};
     const rawEmojiCount: WordCount = {};
