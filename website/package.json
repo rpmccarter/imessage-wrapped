@@ -20,7 +20,7 @@
     "react-dom": "^18",
     "react-spinners": "^0.13.8",
     "sql.js": "^1.9.0",
-    "vcf": "^2.1.1"
+    "vcf": "jhermsmeier/node-vcf#de4ce73691a50d7714216695721e79ddfd4b1bd0"
   },
   "devDependencies": {
     "@types/node": "^20",

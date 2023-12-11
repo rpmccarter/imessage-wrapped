@@ -33,13 +33,13 @@ export default function GettingStarted() {
         <div className="flex flex-col">
           <FileInput
             title="chat.db file"
-            accept=".db,.gz"
+            accept={['.db']}
             value={chatFile}
             setValue={setChatFile}
           />
           <FileInput
             title="contacts file"
-            accept=".vcf"
+            accept={['.vcf', '.vcard']}
             value={contactFile}
             setValue={setContactFile}
           />
