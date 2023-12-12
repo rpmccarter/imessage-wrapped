@@ -5,6 +5,14 @@ import { DataContext } from '@/contexts/DataContext';
 import { useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { ResultJawn } from '@/db/types';
+import posthog from 'posthog-js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const apiKey = process.env.NEXT_PUBLIC_POSTHOG_API_KEY || '';
+
+posthog.init(apiKey, { api_host: 'https://app.posthog.com' });
 
 const inter = Inter({ subsets: ['latin'] });
 
