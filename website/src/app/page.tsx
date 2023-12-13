@@ -26,8 +26,8 @@ export default function Home() {
         </div>
       ) : (
         <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-24">
-          <h1 className="text-4xl">iMessage Wrapped requires a MacBook</h1> Grab
-          your laptop and come back when you're ready to try it out
+          <h1 className="text-4xl">iMessage Wrapped requires a MacBook</h1>
+          {"Grab your laptop and come back when you're ready to try it out"}
         </div>
       )}
     </main>
