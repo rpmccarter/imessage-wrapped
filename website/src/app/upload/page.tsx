@@ -1,6 +1,7 @@
 'use client';
 
-import { ReactNode, useCallback, useState } from 'react';
+import { ReactNode, useCallback, useState, useEffect } from 'react';
+import isUserOnMobile from '../helpers/isUserOnMobile';
 import { FileInput } from './FileInput';
 import clsx from 'clsx';
 import { useData } from '@/contexts/DataContext';
@@ -26,6 +27,16 @@ const contactSteps = [
 export default function GettingStarted() {
   const [chatFile, setChatFile] = useState<File>();
   const [contactFile, setContactFile] = useState<File>();
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  useEffect(() => {
+    setIsMobile(isUserOnMobile());
+  }, []);
+
+  //If user is on a mobile device, take them back to the landing page
+  if (isMobile) {
+    window.location.href = '/';
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-24">
