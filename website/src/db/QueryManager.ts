@@ -32,7 +32,7 @@ export class QueryManager {
 
     const displayNameFromId = (id: string): string => {
       const normalId = normalizeId(id);
-      return contacts[normalId] ?? id;
+      return contacts[normalId] ?? contacts[normalId.slice(1)] ?? id;
     };
     this.db.create_function('display_name_from_id', displayNameFromId);
     this.db.run(`
